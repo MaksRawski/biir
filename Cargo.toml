@@ -1,9 +1,18 @@
 [package]
-name = "BIIR"
+name = "biir"
 version = "0.1.0"
 authors = ["Maks Rawski <maksymilian.rawski@tutanota.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "biir"
+path = "src/lib.rs"
+
+[[bin]]
+name = "biir"
+path = "src/main.rs"
+
 [dependencies]
+termion = "1.5.6"

@@ -1,15 +1,15 @@
-mod tape;
-use tape::Tape;
+use biir::parser::Parser;
+use std::process;
+// use clap;
 
 fn main() {
-    let mut tape = Tape::new();
+    let mut parser = Parser::new();
 
-    println!("{}", tape);
-    tape.move_right();
-    tape.move_right();
-    tape.move_right();
-    tape.move_right();
-    tape.move_right();
-    tape.move_right();
-    println!("{}", tape);
+    match parser.run("test.bf", false){
+        Ok( () ) => {},
+        Err( e ) => {
+            eprintln!("{}", e);
+            process::exit(1);
+        }
+    }
 }

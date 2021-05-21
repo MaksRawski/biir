@@ -16,12 +16,17 @@ impl Tape {
         }
     }
 
+    pub fn set_current_value(&mut self, value: Wrapping<u8>){
+        self.tape[ self.current_position as usize ] = value;
+        self.current_value = value;
+    }
+
     // TODO: we might not even want those functions to be public
-    pub fn move_right(&mut self) -> Option<String>{
+    pub fn move_right(&mut self) -> Result<(), String>{
         // will return "Exceeded tape length" if current_position == 2**16
         // otherwise will return None
         if self.current_position == u16::MAX{
-            return Some(String::from("Exceeded tape length"));
+            return Err( String::from("Exceeded tape length") );
         }
 
         self.current_position += 1;
@@ -32,27 +37,25 @@ impl Tape {
                 self.tape.push(self.current_value);
             }
         }
-        None
+        Ok( () )
     }
 
-    pub fn move_left(&mut self) -> Option<String>{
+    pub fn move_left(&mut self) -> Result<(), String>{
         if self.current_position == u16::MIN{
-            return Some(String::from("Tried to go to the negative side of the tape"));
+            return Err( String::from("Tried to go to the negative side of the tape") );
         }
 
         self.current_position -= 1;
         self.current_value = *self.tape.get(self.current_position as usize).unwrap();
-        None
+        Ok( () )
     }
 
     pub fn inc(&mut self){
-        self.current_value += Wrapping(1);
-        self.tape[self.current_position as usize] = self.current_value;
+        self.set_current_value( self.current_value + Wrapping(1) );
     }
 
     pub fn dec(&mut self){
-        self.current_value -= Wrapping(1);
-        self.tape[self.current_position as usize] = self.current_value;
+        self.set_current_value( self.current_value - Wrapping(1) );
     }
 }
 

@@ -16,3 +16,4 @@ path = "src/main.rs"
 
 [dependencies]
 termion = "1.5.6"
+clap = "2.33.3"

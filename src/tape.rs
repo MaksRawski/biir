@@ -63,7 +63,7 @@ impl fmt::Display for Tape{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // highlight current cell and print nearby cells
         // print 10 cells while trying to be in the middle
-        let down_range = (self.current_position as i16 - 5).max(0);
+        let down_range = (self.current_position as i16 - 5).max(0) as u16;
         let up_range = down_range + 10;
         let mut tape = String::new();
 
@@ -80,6 +80,12 @@ impl fmt::Display for Tape{
                 }
                 None => break,
             }
+        }
+        if down_range > u16::MIN{
+            tape = format!("current postion: {}\n... {}", self.current_position, tape);
+        }
+        if up_range < u16::MAX{
+            tape = format!("{}...", tape);
         }
         write!(f, "{}", tape)
     }

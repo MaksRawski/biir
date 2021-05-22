@@ -43,7 +43,7 @@ impl Parser{
 
     fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), String>{
         if numerical_mode{
-            print!("{}", self.tape.current_value);
+            println!("{}", self.tape.current_value);
         }
         else{
             print!("{}", self.tape.current_value.0 as char);
@@ -54,7 +54,6 @@ impl Parser{
 
     fn enter_loop(&mut self, program: &str) -> Result<(), String>{
         if self.tape.current_value.0 == 0{
-            // find a matching closing bracket and move program counter +1 from there
             match self.find_closing_bracket(program){
                 Ok(v) => {
                     self.program_counter = v;
@@ -86,16 +85,16 @@ impl Parser{
         }
     }
 
-    pub fn run(&mut self, file: &str) -> Result<(), String>{
+    pub fn run(&mut self, file: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
         let program: String;
         match fs::read_to_string(file){
             Ok(v) => program = v,
             Err(_) => return Err( format!("File {} could not be read", file) ),
         }
-        self.execute(&program, false)
+        self.execute(&program, numerical_mode, debug_mode)
     }
 
-    pub fn execute(&mut self, program: &str, numerical_mode: bool) -> Result<(), String>{
+    pub fn execute(&mut self, program: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
         while self.program_counter < program.len(){
             let error: Result<(), String> = match program.chars().nth(self.program_counter).unwrap(){
                 '-' => Ok( self.tape.dec() ),
@@ -106,6 +105,13 @@ impl Parser{
                 '.' => self.handle_dot(numerical_mode),
                 '[' => self.enter_loop(&program),
                 ']' => self.leave_loop(),
+                '!' => {
+                    if debug_mode && program[self.program_counter..self.program_counter+5] == *"!TAPE"{
+                        // use some utility for printing to stdout
+                        println!("!TAPE: {}", self.tape);
+                    }
+                    Ok( () )
+                },
                 _ => Ok( () ),
             };
             self.program_counter += 1;
@@ -115,10 +121,9 @@ impl Parser{
                 return Err(e);
             }
         }
+        if debug_mode{
+            println!("\n----DEBUG INFO-----\n{}", self.tape);
+        }
         Ok( () )
-    }
-
-    pub fn debug(&mut self){
-        print!("{}", self.tape);
     }
 }

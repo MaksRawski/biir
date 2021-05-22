@@ -5,7 +5,7 @@ use std::process;
 fn main() {
     let mut parser = Parser::new();
 
-    match parser.run("test.bf", false){
+    match parser.run("test.bf"){
         Ok( () ) => {},
         Err( e ) => {
             eprintln!("{}", e);

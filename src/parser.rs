@@ -2,96 +2,115 @@ use std::fs;
 use std::num::Wrapping;
 
 use crate::tape::Tape;
-use crate::utils::{getchar, find_closing_bracket};
+use crate::utils::getchar;
 
 pub struct Parser{
     tape: Tape,
+    program_counter: usize,
+    stack: Vec<usize>,
 }
 
 impl Parser{
     pub fn new() -> Self{
         Self{
             tape: Tape::new(),
+            program_counter: 0,
+            stack: Vec::new()
         }
     }
 
-//     /// cleans up the file, removes comments
-//     pub fn parse(&self, file: &str) -> Result<ParsedProgram, io::Error >{
-//         let program = fs::read_to_string(file)?;
-//         let pattern = Regex::new(r"[^,.+-<>\[\]]*").unwrap();
-//         let parsed = ParsedProgram{
-//             program:  pattern.replace_all(&program, "").to_owned().to_string(),
-//         };
+    // TODO: improve this
+    pub fn find_closing_bracket(&self, program: &str) -> Result<usize, ()>{
+        let mut depth = 0;
+        for i in self.program_counter..program.len(){
+            let current_char = program.chars().nth(i).unwrap();
+            if current_char == '['{
+                depth += 1;
+            }
+            else if current_char == ']'{
+                depth -= 1;
+                if depth == 0{
+                    return Ok(i);
+                }
+            }
+        }
+        Err( () )
+    }
 
-//         Ok( parsed )
-//     }
+    fn handle_comma(&mut self) -> Result<(), String>{
+        Ok( self.tape.set_current_value( Wrapping(getchar()) ) )
+    }
 
-    // TODO: move logic out of this so that we can just pass a string and execute it
-    pub fn run(&mut self, file: &str, numerical_mode: bool) -> Result<(), String>{
-        let mut code: String;
-        let mut program_counter = 0;
-        let mut stack = Vec::new();
+    fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), String>{
+        if numerical_mode{
+            print!("{}", self.tape.current_value);
+        }
+        else{
+            print!("{}", self.tape.current_value.0 as char);
+        }
+        Ok( () )
+    }
 
+
+    fn enter_loop(&mut self, program: &str) -> Result<(), String>{
+        if self.tape.current_value.0 == 0{
+            // find a matching closing bracket and move program counter +1 from there
+            match self.find_closing_bracket(program){
+                Ok(v) => {
+                    self.program_counter = v;
+                    Ok( () )
+                }
+                Err(_) => Err( format!("[char: {}] Syntax error: '[' doesn't have matching closing bracket", self.program_counter) )
+            }
+        }
+        else{
+            self.stack.push(self.program_counter);
+            Ok( () )
+        }
+    }
+
+    fn leave_loop(&mut self) -> Result<(), String>{
+        match self.stack.last(){
+            Some(v) => {
+                if self.tape.current_value.0 == 0{
+                    self.stack.pop();
+                }
+                else{
+                    self.program_counter = *v;
+                }
+                Ok( () )
+            },
+            None => {
+                Err( format!("[char: {}] Syntax error: ']' doesn't have matching opening bracket!", self.program_counter) )
+            }
+        }
+    }
+
+    pub fn run(&mut self, file: &str) -> Result<(), String>{
+        let program: String;
         match fs::read_to_string(file){
-            Ok(v) => code = v,
+            Ok(v) => program = v,
             Err(_) => return Err( format!("File {} could not be read", file) ),
         }
+        self.execute(&program, false)
+    }
 
-        while program_counter < code.len(){
-            let error: Result<(), String> = match code.chars().nth(program_counter).unwrap(){
+    pub fn execute(&mut self, program: &str, numerical_mode: bool) -> Result<(), String>{
+        while self.program_counter < program.len(){
+            let error: Result<(), String> = match program.chars().nth(self.program_counter).unwrap(){
                 '-' => Ok( self.tape.dec() ),
                 '+' => Ok( self.tape.inc() ),
                 '<' => self.tape.move_left(),
                 '>' => self.tape.move_right(),
-                ',' => Ok( self.tape.set_current_value( Wrapping(getchar()) ) ),
-                '.' => {
-                    if numerical_mode{
-                        print!("{}", self.tape.current_value);
-                    }
-                    else{
-                        print!("{}", self.tape.current_value.0 as char);
-                    }
-                    Ok( () )
-                }
-
-                '[' => {
-                    if self.tape.current_value.0 == 0{
-                        // find a matching closing bracket and move program counter +1 from there
-                        match find_closing_bracket(program_counter, &code){
-                            Ok(v) => {
-                                program_counter = v;
-                                Ok( () )
-                            }
-                            Err(_) => Err( format!("[char: {}] Syntax error: '[' doesn't have matching closing bracket", program_counter) )
-                        }
-                    }
-                    else{
-                        stack.push(program_counter);
-                        Ok( () )
-                    }
-                }
-
-                ']' => {
-                    match stack.last(){
-                        Some(v) => {
-                            if self.tape.current_value.0 == 0{
-                                stack.pop();
-                            }
-                            else{
-                                program_counter = *v;
-                            }
-                            Ok( () )
-                        },
-                        None => {
-                            Err( format!("[char: {}] Syntax error: ']' doesn't have matching opening bracket!", program_counter) )
-                        }
-                    }
-                }
-
+                ',' => self.handle_comma(),
+                '.' => self.handle_dot(numerical_mode),
+                '[' => self.enter_loop(&program),
+                ']' => self.leave_loop(),
                 _ => Ok( () ),
             };
-            program_counter += 1;
+            self.program_counter += 1;
 
+            // we return only if there was an error
             if let Err(e) = error{
                 return Err(e);
             }

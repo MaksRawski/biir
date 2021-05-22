@@ -1,18 +1,16 @@
 [package]
 name = "biir"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Maks Rawski <maksymilian.rawski@tutanota.com>"]
 edition = "2018"
+description = "Brainfuck Interpreter In Rust"
+license = "MIT"
+repository = "https://gitlab.com/MaksRawski/biir"
+homepage = "https://gitlab.com/MaksRawski/biir"
+keywords = ["brainfuck", "interpreter"]
+categories = ["command-line-utilities", "parser-implementations"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[lib]
-name = "biir"
-path = "src/lib.rs"
-
-[[bin]]
-name = "biir"
-path = "src/main.rs"
 
 [dependencies]
 termion = "1.5.6"

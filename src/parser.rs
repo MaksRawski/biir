@@ -38,7 +38,11 @@ impl Parser{
     }
 
     fn handle_comma(&mut self) -> Result<(), String>{
-        Ok( self.tape.set_current_value( Wrapping(getchar()) ) )
+        let input = getchar();
+        match input{
+            Ok(v) => Ok( self.tape.set_current_value( Wrapping(v) )),
+            Err(_) => Err( String::from("Runtime error: Used up given input but more is needed, Exiting!") ),
+        }
     }
 
     fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), String>{

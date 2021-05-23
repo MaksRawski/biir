@@ -84,7 +84,9 @@ impl fmt::Display for Tape{
         if down_range > u16::MIN{
             tape = format!("current postion: {}\n... {}", self.current_position, tape);
         }
-        if up_range < u16::MAX{
+        // if we are on the last created cell
+        // we don't want to print "..." as if there is something further
+        if self.current_position as usize != self.tape.len() - 1 && up_range < u16::MAX{
             tape = format!("{}...", tape);
         }
         write!(f, "{}", tape)

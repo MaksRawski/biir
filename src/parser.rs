@@ -63,7 +63,7 @@ impl Parser{
                     self.program_counter = v;
                     Ok( () )
                 }
-                Err(_) => Err( format!("[char: {}] Syntax error: '[' doesn't have matching closing bracket", self.program_counter) )
+                Err(_) => Err( String::from("Syntax error: '[' doesn't have matching closing bracket" ) )
             }
         }
         else{
@@ -84,7 +84,7 @@ impl Parser{
                 Ok( () )
             },
             None => {
-                Err( format!("[char: {}] Syntax error: ']' doesn't have matching opening bracket!", self.program_counter) )
+                Err( String::from("Syntax error: ']' doesn't have matching opening bracket!") )
             }
         }
     }
@@ -122,11 +122,19 @@ impl Parser{
 
             // we return only if there was an error
             if let Err(e) = error{
-                return Err(e);
+                return Err( format!("[char: {}] {}", self.program_counter, e) );
             }
         }
+        // we want to print newline at the end but
+        // not when in numerical mode because it already prints one
+        // TODO: if we run in debug mode and there was no output
+        // we will get an extra empty line, this isn't necesserially desired
+        if !numerical_mode{
+            println!("");
+        }
         if debug_mode{
-            println!("\n----DEBUG INFO-----\n{}", self.tape);
+            println!("----DEBUG INFO-----\n{}", self.tape);
+
         }
         Ok( () )
     }

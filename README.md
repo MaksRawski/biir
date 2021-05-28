@@ -28,11 +28,9 @@ This behaviour can be avoided by using its `-n` flag.
 
 
 # TODO:
-- [x] write a proper README
-- [x] clap - argument parsing
-- [x] parse files,
-- [x] `-d` debug mode, prints tape at the end, enables the use of `!TAPE` to print 10 nearest values on the tape at any point of the program
-- [x] `-n` numerical mode, prints values themselves instead of interpreting them as ascii.
+- [x] quit on Ctrl-c
+- [x] tolerate newlines
+- [ ] (optional) tape wrapping behaviour, tape size should be adjustable then
 - [ ] write tests
 - [ ] configure gitlab ci to run tests automatically
 - [ ] add a CI badge to README

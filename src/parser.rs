@@ -100,7 +100,7 @@ impl Parser{
 
     pub fn execute(&mut self, program: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
         while self.program_counter < program.len(){
-            let error: Result<(), String> = match program.chars().nth(self.program_counter).unwrap(){
+            let error: Result<(), String> = match program.chars().nth(self.program_counter).unwrap_or(' '){
                 '-' => Ok( self.tape.dec() ),
                 '+' => Ok( self.tape.inc() ),
                 '<' => self.tape.move_left(),

@@ -7,11 +7,11 @@
 `biir filename.bf`
 
 ## Numerical mode
-Available through `-n`or `--numerical-mode`.
+Available through `-n` or `--numerical-mode`.
 Prints byte values instead of their ascii representations.
 
 ## Debug mode
-Entered via `-d` or`--debug-mode`.
+Entered via `-d` or `--debug-mode`.
 Allows the usage of `!TAPE` to print 10 nearby (already created) cells and
 also prints some debug info at the end of the execution.
 

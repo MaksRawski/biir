@@ -63,7 +63,7 @@ impl Parser{
                     self.program_counter = v;
                     Ok( () )
                 }
-                Err(_) => Err( String::from("Syntax error: '[' doesn't have matching closing bracket" ) )
+                Err(_) => Err( String::from("Syntax error: '[' doesn't have a matching closing bracket" ) )
             }
         }
         else{
@@ -84,7 +84,7 @@ impl Parser{
                 Ok( () )
             },
             None => {
-                Err( String::from("Syntax error: ']' doesn't have matching opening bracket!") )
+                Err( String::from("Syntax error: ']' doesn't have a matching opening bracket!") )
             }
         }
     }
@@ -111,7 +111,6 @@ impl Parser{
                 ']' => self.leave_loop(),
                 '!' => {
                     if debug_mode && program[self.program_counter..self.program_counter+5] == *"!TAPE"{
-                        // use some utility for printing to stdout
                         println!("!TAPE: {}", self.tape);
                     }
                     Ok( () )

@@ -26,7 +26,7 @@ impl Tape {
         // will return "Exceeded tape length" if current_position == 2**16
         // otherwise will return None
         if self.current_position == u16::MAX{
-            return Err( String::from("Exceeded tape length") );
+            return Err( String::from("Runtime error: Exceeded tape length") );
         }
 
         self.current_position += 1;
@@ -42,7 +42,7 @@ impl Tape {
 
     pub fn move_left(&mut self) -> Result<(), String>{
         if self.current_position == u16::MIN{
-            return Err( String::from("Tried to go to the negative side of the tape") );
+            return Err( String::from("Runtime error: Tried to go to the negative side of the tape") );
         }
 
         self.current_position -= 1;

@@ -41,7 +41,7 @@ impl Parser{
         let input = getchar();
         match input{
             Ok(v) => Ok( self.tape.set_current_value( Wrapping(v) )),
-            Err(_) => Err( String::from("Runtime error: Used up given input but more is needed, Exiting!") ),
+            Err(e) => Err( format!("Runtime error: {}", e) ),
         }
     }
 

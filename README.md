@@ -28,9 +28,8 @@ This behaviour can be avoided by using its `-n` flag.
 
 
 # TODO:
-- [x] quit on Ctrl-c
-- [x] tolerate newlines
 - [ ] (optional) tape wrapping behaviour, tape size should be adjustable then
+- [ ] `!TAPE` doesn't work sometimes
 - [ ] write tests
 - [ ] configure gitlab ci to run tests automatically
 - [ ] add a CI badge to README

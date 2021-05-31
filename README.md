@@ -1,5 +1,7 @@
 # BIIR - Brainfuck Interpreter In Rust
 
+[![pipeline status](https://gitlab.com/MaksRawski/biir/badges/develop/pipeline.svg)](https://gitlab.com/MaksRawski/biir/-/commits/develop)
+
 # Installation
 `cargo install biir`
 
@@ -30,6 +32,6 @@ This behaviour can be avoided by using its `-n` flag.
 # TODO:
 - [ ] (optional) tape wrapping behaviour, tape size should be adjustable then
 - [ ] `!TAPE` doesn't work sometimes
-- [ ] write tests
-- [ ] configure gitlab ci to run tests automatically
-- [ ] add a CI badge to README
+- [x] write tests
+- [x] configure gitlab ci to run tests automatically
+- [x] add a CI badge to README

@@ -2,12 +2,14 @@ use std::fs;
 use std::num::Wrapping;
 
 use crate::tape::Tape;
-use crate::utils::getchar;
+use crate::utils::{getchar, Output};
+use crate::error::Error;
 
 pub struct Parser{
     pub tape: Tape,
     pub program_counter: usize,
     pub stack: Vec<usize>,
+    pub output: Output,
 }
 
 impl Parser{
@@ -15,7 +17,8 @@ impl Parser{
         Self{
             tape: Tape::new(),
             program_counter: 0,
-            stack: Vec::new()
+            stack: Vec::new(),
+            output: Output::Stdout(std::io::stdout()),
         }
     }
 
@@ -47,10 +50,10 @@ impl Parser{
 
     pub fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), String>{
         if numerical_mode{
-            println!("{}", self.tape.current_value);
+            self.output.write( format!("{}\n", self.tape.current_value) );
         }
         else{
-            print!("{}", self.tape.current_value.0 as char);
+            self.output.write( format!("{}", self.tape.current_value.0 as char) );
         }
         Ok( () )
     }
@@ -111,7 +114,7 @@ impl Parser{
                 ']' => self.leave_loop(),
                 '!' => {
                     if debug_mode && program[self.program_counter..self.program_counter+5] == *"!TAPE"{
-                        println!("!TAPE: {}", self.tape);
+                        self.output.write( format!("!TAPE: {}", self.tape) );
                     }
                     Ok( () )
                 },
@@ -150,11 +153,10 @@ impl Parser{
         // TODO: if we run in debug mode and there was no output
         // we will get an extra empty line, this isn't necesserially desired
         if !numerical_mode{
-            println!("");
+            self.output.write( format!("") );
         }
         if debug_mode{
-            println!("----DEBUG INFO-----\n{}", self.tape);
-
+            self.output.write( format!("----DEBUG INFO-----\n{}", self.tape) );
         }
         Ok( () )
     }

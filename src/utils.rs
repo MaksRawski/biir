@@ -23,3 +23,19 @@ pub fn getchar() -> Result<u8, String>{
     }
 }
 
+/// common interface for writing to stdout
+/// as well as Vector, to allow integration tests
+pub enum Output{
+    Stdout(std::io::Stdout),
+    Vector(Vec<String>),
+}
+
+impl Output{
+    pub fn write(&mut self, msg: String){
+        match self{
+            Output::Stdout(out) => { out.write(msg.as_bytes()).unwrap(); },
+            Output::Vector(out) => { out.push(msg) },
+        };
+    }
+}
+

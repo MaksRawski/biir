@@ -5,9 +5,9 @@ use crate::tape::Tape;
 use crate::utils::getchar;
 
 pub struct Parser{
-    tape: Tape,
-    program_counter: usize,
-    stack: Vec<usize>,
+    pub tape: Tape,
+    pub program_counter: usize,
+    pub stack: Vec<usize>,
 }
 
 impl Parser{
@@ -37,7 +37,7 @@ impl Parser{
         Err( () )
     }
 
-    fn handle_comma(&mut self) -> Result<(), String>{
+    pub fn handle_comma(&mut self) -> Result<(), String>{
         let input = getchar();
         match input{
             Ok(v) => Ok( self.tape.set_current_value( Wrapping(v) )),
@@ -45,7 +45,7 @@ impl Parser{
         }
     }
 
-    fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), String>{
+    pub fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), String>{
         if numerical_mode{
             println!("{}", self.tape.current_value);
         }
@@ -56,7 +56,7 @@ impl Parser{
     }
 
 
-    fn enter_loop(&mut self, program: &str) -> Result<(), String>{
+    pub fn enter_loop(&mut self, program: &str) -> Result<(), String>{
         if self.tape.current_value.0 == 0{
             match self.find_closing_bracket(program){
                 Ok(v) => {
@@ -72,7 +72,7 @@ impl Parser{
         }
     }
 
-    fn leave_loop(&mut self) -> Result<(), String>{
+    pub fn leave_loop(&mut self) -> Result<(), String>{
         match self.stack.last(){
             Some(v) => {
                 if self.tape.current_value.0 == 0{

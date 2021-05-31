@@ -30,8 +30,7 @@ This behaviour can be avoided by using its `-n` flag.
 
 
 # TODO:
-- [ ] (optional) tape wrapping behaviour, tape size should be adjustable then
+- [ ] `--wrapping` allow to wrap around the tape
+- [ ] `--size` set tape size
+- [ ] add a cool logo
 - [ ] `!TAPE` doesn't work sometimes
-- [x] write tests
-- [x] configure gitlab ci to run tests automatically
-- [x] add a CI badge to README

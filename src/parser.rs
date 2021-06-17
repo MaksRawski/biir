@@ -123,8 +123,8 @@ impl Parser{
             // we return only if there was an error
             if let Err(e) = error{
                 let error_msg = match e{
-                    Error::Syntax(msg) => format!("{} {}", "Syntax error", msg),
-                    Error::Runtime(msg) => format!("{} {}", "Runtime error", msg),
+                    Error::Syntax(msg) => format!("{} {}", "Syntax error".red(), msg.normal()),
+                    Error::Runtime(msg) => format!("{} {}", "Runtime error".red(), msg.normal()),
                 };
                 if debug_mode{
                     // TODO: this could definietly be cleaned up, improved

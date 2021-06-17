@@ -3,6 +3,7 @@ use std::num::Wrapping;
 
 use crate::tape::Tape;
 use crate::utils::getchar;
+use crate::error::Error;
 
 pub struct Parser{
     pub tape: Tape,
@@ -37,15 +38,15 @@ impl Parser{
         Err( () )
     }
 
-    pub fn handle_comma(&mut self) -> Result<(), String>{
+    pub fn handle_comma(&mut self) -> Result<(), Error>{
         let input = getchar();
         match input{
             Ok(v) => Ok( self.tape.set_current_value( Wrapping(v) )),
-            Err(e) => Err( format!("Runtime error: {}", e) ),
+            Err(e) => Err( Error::Runtime(e) ),
         }
     }
 
-    pub fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), String>{
+    pub fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), Error>{
         if numerical_mode{
             println!("{}", self.tape.current_value);
         }
@@ -56,14 +57,14 @@ impl Parser{
     }
 
 
-    pub fn enter_loop(&mut self, program: &str) -> Result<(), String>{
+    pub fn enter_loop(&mut self, program: &str) -> Result<(), Error>{
         if self.tape.current_value.0 == 0{
             match self.find_closing_bracket(program){
                 Ok(v) => {
                     self.program_counter = v;
                     Ok( () )
                 }
-                Err(_) => Err( String::from("Syntax error: '[' doesn't have a matching closing bracket" ) )
+                Err(_) => Err( Error::Syntax("'[' doesn't have a matching closing bracket!".to_string()) )
             }
         }
         else{
@@ -72,7 +73,7 @@ impl Parser{
         }
     }
 
-    pub fn leave_loop(&mut self) -> Result<(), String>{
+    pub fn leave_loop(&mut self) -> Result<(), Error>{
         match self.stack.last(){
             Some(v) => {
                 if self.tape.current_value.0 == 0{
@@ -84,7 +85,7 @@ impl Parser{
                 Ok( () )
             },
             None => {
-                Err( String::from("Syntax error: ']' doesn't have a matching opening bracket!") )
+                Err( Error::Syntax("']' doesn't have a matching opening bracket!".to_string()) )
             }
         }
     }
@@ -93,14 +94,14 @@ impl Parser{
         let program: String;
         match fs::read_to_string(file){
             Ok(v) => program = v,
-            Err(_) => return Err( format!("File {} could not be read", file) ),
+            Err(_) => return Err( format!("File {} could not be read!", file) ),
         }
         self.execute(&program, numerical_mode, debug_mode)
     }
 
     pub fn execute(&mut self, program: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
         while self.program_counter < program.len(){
-            let error: Result<(), String> = match program.chars().nth(self.program_counter).unwrap_or(' '){
+            let error: Result<(), Error> = match program.chars().nth(self.program_counter).unwrap_or(' '){
                 '-' => Ok( self.tape.dec() ),
                 '+' => Ok( self.tape.inc() ),
                 '<' => self.tape.move_left(),
@@ -121,6 +122,10 @@ impl Parser{
 
             // we return only if there was an error
             if let Err(e) = error{
+                let error_msg = match e{
+                    Error::Syntax(msg) => format!("{} {}", "Syntax error", msg),
+                    Error::Runtime(msg) => format!("{} {}", "Runtime error", msg),
+                };
                 if debug_mode{
                     // TODO: this could definietly be cleaned up, improved
                     // print current program line or 100 chars in both directions
@@ -141,7 +146,7 @@ impl Parser{
                     return Err(err_msg);
                 }
                 else{
-                    return Err(e);
+                    return Err(error_msg);
                 }
             }
         }

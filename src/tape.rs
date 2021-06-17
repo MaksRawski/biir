@@ -1,6 +1,8 @@
 use std::fmt;
 use std::num::Wrapping;
 
+use crate::error::Error;
+
 pub struct Tape {
     pub current_position: u16,
     pub current_value: Wrapping<u8>,
@@ -21,12 +23,11 @@ impl Tape {
         self.current_value = value;
     }
 
-    // TODO: we might not even want those functions to be public
-    pub fn move_right(&mut self) -> Result<(), String>{
+    pub fn move_right(&mut self) -> Result<(), Error>{
         // will return "Exceeded tape length" if current_position == 2**16
         // otherwise will return None
         if self.current_position == u16::MAX{
-            return Err( String::from("Runtime error: Exceeded tape length") );
+            return Err( Error::Runtime("Exceeded tape length".to_string()) );
         }
 
         self.current_position += 1;
@@ -40,9 +41,9 @@ impl Tape {
         Ok( () )
     }
 
-    pub fn move_left(&mut self) -> Result<(), String>{
+    pub fn move_left(&mut self) -> Result<(), Error>{
         if self.current_position == u16::MIN{
-            return Err( String::from("Runtime error: Tried to go to the negative side of the tape") );
+            return Err( Error::Runtime("Tried to go to the negative side of the tape".to_string()) );
         }
 
         self.current_position -= 1;

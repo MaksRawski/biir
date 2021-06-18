@@ -5,13 +5,6 @@ pub struct Traceback;
 impl Traceback{
     /// returns info about current line as a tuple:
     /// (line_nr, char_nr, current_line)
-    /// ```
-    /// let (line_nr, char_nr, current_line) = Traceback::current_line("TEST 1\nTEST 2", 9);
-    ///
-    /// assert_eq!(line_nr, 2);
-    /// assert_eq!(char_nr, 1);
-    /// assert_eq!(current_line, "TEST 2");
-    /// ```
     fn current_line<'a>(program: &'a str, program_counter: usize) -> (usize, usize, &'a str){
         let line_nr = &program[0..program_counter].lines().count();
         let chars_before: &usize = &program.lines()
@@ -25,12 +18,6 @@ impl Traceback{
     }
 
     /// returns entire line but with the current char red
-    /// ```
-    /// assert_eq!(
-    ///     Traceback::highlight_current_char_in_line("Test 123", 4),
-    ///     format!("Tes{} 123", "t".red())
-    /// );
-    ///
     fn highlight_current_char_in_line(current_line: &str, char_nr: usize) -> String{
         format!("{}{}{}",
             current_line.chars().take(char_nr).collect::<String>(),
@@ -47,5 +34,28 @@ impl Traceback{
             "{}\non line {}, char {}:\n{}\n",
             error_msg, line_nr, char_nr, highlighted_current_line
         )
+    }
+}
+
+#[cfg(test)]
+mod test_traceback_internals{
+    use super::*;
+
+    #[test]
+    fn test_current_line(){
+        let (line_nr, char_nr, current_line) = Traceback::current_line("TEST 1\nTEST 2", 7);
+
+        assert_eq!(line_nr, 2);
+        assert_eq!(char_nr, 1);
+        assert_eq!(current_line, "TEST 2");
+    }
+
+    #[test]
+    fn test_highlighting(){
+        assert_eq!(
+            Traceback::highlight_current_char_in_line("Test 123", 4),
+            format!("Tes{} 123", "t".red())
+        );
+
     }
 }

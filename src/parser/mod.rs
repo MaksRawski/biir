@@ -4,6 +4,7 @@ use colored::*;
 
 use crate::tape::Tape;
 use crate::utils::{getchar, Output};
+use crate::traceback::Traceback::traceback;
 use crate::error::Error;
 
 pub struct Parser{
@@ -130,28 +131,7 @@ impl Parser{
                     Error::Syntax(msg) => format!("{} {}", "Syntax error".red(), msg.normal()),
                     Error::Runtime(msg) => format!("{} {}", "Runtime error".red(), msg.normal()),
                 };
-                if debug_mode{
-                    // TODO: this could definietly be cleaned up, improved
-                    // print current program line or 100 chars in both directions
-                    let min = std::cmp::max(self.program_counter as i32 - 100, 1) as usize;
-                    let max = std::cmp::min(self.program_counter as i32 + 100, program.len() as i32) as usize;
-
-                    let start_of_line: usize = &program[min..self.program_counter]
-                        .rfind('\n')
-                        .unwrap_or(min) - 1;
-                    let end_of_line: usize = &self.program_counter + &program[self.program_counter..max]
-                        .find('\n')
-                        .unwrap_or(max);
-
-                    let current_line = &program[start_of_line..end_of_line];
-                    let line_nr = &program[0..self.program_counter].lines().count();
-                    let pointer = " ".repeat(self.program_counter - start_of_line - 1) + "^";
-                    let err_msg = format!("{}\non line {}, char {}:\n{}\n{}\nTAPE: \n{}", e, line_nr, self.program_counter - start_of_line, current_line, pointer, self.tape);
-                    return Err(err_msg);
-                }
-                else{
-                    return Err(error_msg);
-                }
+                let tb = traceback(program, self.program_counter, error_msg);
             }
         }
         // we want to print newline at the end but

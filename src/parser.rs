@@ -1,5 +1,6 @@
 use std::fs;
 use std::num::Wrapping;
+use colored::*;
 
 use crate::tape::Tape;
 use crate::utils::getchar;

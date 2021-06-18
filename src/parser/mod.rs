@@ -4,7 +4,7 @@ use colored::*;
 
 use crate::tape::Tape;
 use crate::utils::{getchar, Output};
-use crate::traceback::Traceback::traceback;
+use crate::traceback::Traceback;
 use crate::error::Error;
 
 pub struct Parser{
@@ -131,7 +131,7 @@ impl Parser{
                     Error::Syntax(msg) => format!("{} {}", "Syntax error".red(), msg.normal()),
                     Error::Runtime(msg) => format!("{} {}", "Runtime error".red(), msg.normal()),
                 };
-                let tb = traceback(program, self.program_counter, error_msg);
+                let tb = Traceback::traceback(program, self.program_counter, &error_msg);
             }
         }
         // we want to print newline at the end but

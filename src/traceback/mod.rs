@@ -8,11 +8,14 @@ impl Traceback{
     fn current_line<'a>(program: &'a str, program_counter: usize) -> (usize, usize, &'a str){
         let line_nr = &program[0..program_counter].lines().count();
         let chars_before: &usize = &program.lines()
-            .take(*line_nr-1)
+            .take(*line_nr)
             .fold(0, |sum, l| sum + l.chars().count());
+        println!("chars_before = {}, line_nr = {}", chars_before, line_nr);
+        println!("pc = {}", program_counter);
 
         let char_nr = program_counter - chars_before;
         let current_line = &program.lines().nth(line_nr - 1).unwrap();
+        println!("current line = {}", current_line);
 
         (*line_nr, char_nr, current_line)
     }
@@ -22,7 +25,10 @@ impl Traceback{
         format!("{}{}{}",
             current_line.chars().take(char_nr).collect::<String>(),
             current_line.chars().nth(char_nr).unwrap().to_string().red(),
-            current_line.chars().skip(char_nr).take(current_line.chars().count() - char_nr).collect::<String>(),
+            current_line.chars()
+                .skip(char_nr + 1)
+                .take(current_line.chars().count() - char_nr)
+                .collect::<String>(),
         )
     }
 
@@ -38,24 +44,4 @@ impl Traceback{
 }
 
 #[cfg(test)]
-mod test_traceback_internals{
-    use super::*;
-
-    #[test]
-    fn test_current_line(){
-        let (line_nr, char_nr, current_line) = Traceback::current_line("TEST 1\nTEST 2", 7);
-
-        assert_eq!(line_nr, 2);
-        assert_eq!(char_nr, 1);
-        assert_eq!(current_line, "TEST 2");
-    }
-
-    #[test]
-    fn test_highlighting(){
-        assert_eq!(
-            Traceback::highlight_current_char_in_line("Test 123", 4),
-            format!("Tes{} 123", "t".red())
-        );
-
-    }
-}
+mod test_traceback;

@@ -20,25 +20,26 @@ impl Traceback{
     }
 
     /// returns entire line but with the current char red
-    fn highlight_current_char_in_line(current_line: &str, char_nr: usize) -> String{
-        format!("{}{}{}",
+    /// will return an Error on empty string
+    fn highlight_current_char_in_line(current_line: &str, char_nr: usize) -> Result<String, ()>{
+        Ok(format!("{}{}{}",
             current_line.chars().take(char_nr).collect::<String>(),
-            current_line.chars().nth(char_nr).unwrap().to_string().red(),
+            current_line.chars().nth(char_nr).ok_or(())?.to_string().red(),
             current_line.chars()
                 .skip(char_nr + 1)
                 .take(current_line.chars().count() - char_nr)
                 .collect::<String>(),
-        )
+        ))
     }
 
-    pub fn traceback(program: &str, program_counter: usize, error_msg: &str) -> String{
+    pub fn traceback(program: &str, program_counter: usize, error_msg: &str) -> Result<String, ()>{
         let (line_nr, char_nr, current_line) = Traceback::current_line(program, program_counter);
-        let highlighted_current_line = Traceback::highlight_current_char_in_line(current_line, char_nr);
+        let highlighted_current_line = Traceback::highlight_current_char_in_line(current_line, char_nr)?;
 
-        format!(
+        Ok(format!(
             "{}\non line {}, char {}:\n{}\n",
             error_msg, line_nr, char_nr, highlighted_current_line
-        )
+        ))
     }
 }
 

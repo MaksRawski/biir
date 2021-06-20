@@ -21,6 +21,7 @@ impl Traceback{
 
     /// returns entire line but with the current char red
     /// will return an Error on empty string
+    // TODO: patch to work for unicodes
     fn highlight_current_char_in_line(current_line: &str, char_nr: usize) -> Result<String, ()>{
         Ok(format!("{}{}{}",
             current_line.chars().take(char_nr).collect::<String>(),

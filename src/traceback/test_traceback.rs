@@ -22,9 +22,12 @@ fn test_current_line(
 proptest!{
     #[test]
     fn test_highlighting(index: usize, test_text: String) {
-        let current_char_red = test_text.chars().nth(index).unwrap().to_string().red();
+        // skip empty strings as they're supposed to return Err
+        if test_text.len() == 0 { return Ok( () ) }
 
-        let output = Traceback::highlight_current_char_in_line(&test_text, index);
+        let output = Traceback::highlight_current_char_in_line(&test_text, index).unwrap();
+
+        let current_char_red = test_text.chars().nth(index).unwrap();
 
         // each colored char takes 10 chars
         // if we collect to String it will be stored as 10 chars

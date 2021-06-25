@@ -167,3 +167,6 @@ impl Parser{
         Ok( () )
     }
 }
+
+#[cfg(test)]
+mod test_parser;

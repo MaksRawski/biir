@@ -37,4 +37,30 @@ impl Output{
             Output::Vector(out) => { out.push(msg) },
         };
     }
+    /// return string of everyting that has been written
+    /// ```
+    /// use biir::utils::Output;
+    ///
+    /// let mut output = Output::Vector(Vec::new());
+    ///
+    /// output.write("Hello, ".to_string());
+    /// output.write("world!".to_string());
+    ///
+    /// assert_eq!(output.read(), "Hello, world!");
+    /// ```
+    /// panic when used with Output::Stdout
+    /// ```
+    /// use biir::utils::Output;
+    ///
+    /// let mut output = Output::Stdout(std::io::stdout());
+    /// let result = std::panic::catch_unwind(|| output.read());
+    ///
+    /// assert!(result.is_err());
+    /// ```
+    pub fn read(&self) -> String{
+        match self{
+            Output::Stdout(_) => panic!(),
+            Output::Vector(v) => v.join(""),
+        }
+    }
 }

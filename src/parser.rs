@@ -7,9 +7,9 @@ use crate::utils::{getchar, Output};
 use crate::error::Error;
 
 pub struct Parser{
-    pub tape: Tape,
+    tape: Tape,
+    stack: Vec<usize>,
     pub program_counter: usize,
-    pub stack: Vec<usize>,
     pub output: Output,
 }
 
@@ -24,7 +24,7 @@ impl Parser{
     }
 
     // TODO: improve this
-    pub fn find_closing_bracket(&self, program: &str) -> Result<usize, ()>{
+    fn find_closing_bracket(&self, program: &str) -> Result<usize, ()>{
         let mut depth = 0;
         for i in self.program_counter..program.len(){
             let current_char = program.chars().nth(i).unwrap();
@@ -41,7 +41,7 @@ impl Parser{
         Err( () )
     }
 
-    pub fn handle_comma(&mut self) -> Result<(), Error>{
+    fn handle_comma(&mut self) -> Result<(), Error>{
         let input = getchar();
         match input{
             Ok(v) => Ok( self.tape.set_current_value( Wrapping(v) )),
@@ -49,7 +49,7 @@ impl Parser{
         }
     }
 
-    pub fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), Error>{
+    fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), Error>{
         if numerical_mode{
             self.output.write( format!("{}\n", self.tape.current_value) );
         }
@@ -60,7 +60,7 @@ impl Parser{
     }
 
 
-    pub fn enter_loop(&mut self, program: &str) -> Result<(), Error>{
+    fn enter_loop(&mut self, program: &str) -> Result<(), Error>{
         if self.tape.current_value.0 == 0{
             match self.find_closing_bracket(program){
                 Ok(v) => {
@@ -76,7 +76,7 @@ impl Parser{
         }
     }
 
-    pub fn leave_loop(&mut self) -> Result<(), Error>{
+    fn leave_loop(&mut self) -> Result<(), Error>{
         match self.stack.last(){
             Some(v) => {
                 if self.tape.current_value.0 == 0{
@@ -103,6 +103,7 @@ impl Parser{
     }
 
     pub fn execute(&mut self, program: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
+        // TODO: iterate over graphemes instead
         while self.program_counter < program.len(){
             let error: Result<(), Error> = match program.chars().nth(self.program_counter).unwrap_or(' '){
                 '-' => Ok( self.tape.dec() ),

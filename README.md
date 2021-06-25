@@ -30,9 +30,9 @@ This behaviour can be avoided by using its `-n` flag.
 
 
 # TODO:
-- [x] fix tests
-- [ ] write more tests
-- [ ] write fuzzers
+- [ ] fix traceback tests
+- [ ] write integration test which uses files in `programs/` as testcases
+- [ ] CI: put fuzzing into different job
 - [ ] `--wrapping` allow to wrap around the tape
 - [ ] `--size` set tape size
 - [ ] add a cool logo

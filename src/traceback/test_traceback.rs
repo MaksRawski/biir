@@ -2,21 +2,30 @@ use super::*;
 use test_case::test_case;
 use proptest::prelude::*;
 
-#[test_case(0,   0, 0, "TEST 1"; "first char of the first line")]
-#[test_case(5,   0, 5, "TEST 1"; "last char of the first line")]
-#[test_case(6,   1, 0, "TEST 2"; "first char of the second line")]
-#[test_case(11,  1, 5, "TEST 2"; "last char of the second line")]
-fn test_current_line(
-    pc: usize,
-    expected_line_nr: usize,
-    expected_char_nr: usize,
-    expected_line: &str,
-) {
-    let (line_nr, char_nr, current_line) = Traceback::current_line("TEST 1\nTEST 2", pc);
+// Unfortunetly we can't just put those test_cases
+// above definitions as they're inside impl block.
+// Also moving it all into module instead would require
+// test_case to be a custom test framework
+// and would probably have to be included in normal dependencies
 
-    assert_eq!(line_nr, expected_line_nr);
-    assert_eq!(char_nr, expected_char_nr);
-    assert_eq!(current_line, expected_line);
+#[test_case("ABC\nDEFG\nHI", 0, 0)]
+#[test_case("ABC\nDEFG\nHI", 2, 0)]
+#[test_case("ABC\nDEFG\nHI", 3, 1)]
+#[test_case("ABC\nDEFG\nHI", 6, 1)]
+#[test_case("ABC\nDEFG\nHI", 7, 2)]
+#[test_case("ABC\nDEFG\nHI", 8, 2)]
+fn test_line_nr(program: &str, program_counter: usize, expected_line_nr: usize){
+    assert_eq!(Traceback::line_number(program, program_counter), Ok( expected_line_nr) );
+}
+
+#[test_case("ABC\nDEFG\nHI", 0, 0, 0)]
+#[test_case("ABC\nDEFG\nHI", 0, 2, 2)]
+#[test_case("ABC\nDEFG\nHI", 1, 3, 0)]
+#[test_case("ABC\nDEFG\nHI", 1, 6, 3)]
+#[test_case("ABC\nDEFG\nHI", 2, 7, 0)]
+#[test_case("ABC\nDEFG\nHI", 2, 8, 1)]
+fn test_char_nr(program: &str, line_nr: usize, program_counter: usize, expected_char_nr: usize){
+    assert_eq!(Traceback::char_number(program, line_nr, program_counter), expected_char_nr);
 }
 
 proptest!{

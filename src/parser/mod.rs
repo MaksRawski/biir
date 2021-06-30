@@ -110,10 +110,11 @@ impl Parser{
     }
 
     pub fn execute(&mut self, program: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
-        // TODO: iterate over graphemes instead
-        while self.program_counter < program.len(){
-            let current_char = program.chars().filter(|c| *c != '\n').nth(self.program_counter);
+        let filtered_program = program.chars().filter(|c| *c != '\n').collect::<String>();
 
+        // TODO: iterate over graphemes instead
+        while self.program_counter < filtered_program.chars().count(){
+            let current_char = filtered_program.chars().nth(self.program_counter);
             let error: Result<(), Error> = match current_char.unwrap_or(' '){
                 '-' => Ok( self.tape.dec() ),
                 '+' => Ok( self.tape.inc() ),
@@ -121,10 +122,16 @@ impl Parser{
                 '>' => self.tape.move_right(),
                 ',' => self.handle_comma(),
                 '.' => self.handle_dot(numerical_mode),
-                '[' => self.enter_loop(&program),
+                '[' => self.enter_loop(&filtered_program),
                 ']' => self.leave_loop(),
                 '!' => {
-                    if debug_mode && program[self.program_counter..self.program_counter+5] == *"!TAPE"{
+                    let next_5_chars = filtered_program
+                        .chars()
+                        .skip(self.program_counter)
+                        .take(5)
+                        .collect::<String>();
+
+                    if debug_mode && next_5_chars == "!TAPE"{
                         self.output.write( format!("{}: {}\n", "!TAPE".yellow(), self.tape) );
                     }
                     Ok( () )
@@ -138,7 +145,7 @@ impl Parser{
                     Error::Syntax(msg) => format!("{} {}", "Syntax error:".red(), msg.normal()),
                     Error::Runtime(msg) => format!("{} {}", "Runtime error:".red(), msg.normal()),
                 };
-                let tb = Traceback::traceback(program, self.program_counter, &error_msg);
+                let tb = Traceback::traceback(&program, self.program_counter, &error_msg);
                 return Err( tb.unwrap_or(format!("Error occured while trying to print traceback")) );
             }
 

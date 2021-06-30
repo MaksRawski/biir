@@ -1,7 +1,6 @@
 extern crate biir;
 
 use std::fs;
-use test_case::test_case;
 
 use biir::parser::Parser;
 use biir::utils::Output;
@@ -9,11 +8,6 @@ use biir::utils::Output;
 #[cfg(test)]
 mod example_programs {
     use super::*;
-
-    // TODO: test programs in programs/
-    // they have their expected output given in the first line
-    // within square brackets, like this:
-    // [expected output]
 
     #[test]
     fn test_programs() {
@@ -38,6 +32,6 @@ mod example_programs {
         assert_eq!(format!("[{}]", parser.output.read()), expected_output);
     }
 
-    // test program with newlines
-    // test program with windows style (\r\n) newlines
+    // TODO: test program with newlines
+    // TODO: test program with windows style (\r\n) newlines
 }

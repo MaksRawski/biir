@@ -30,10 +30,10 @@ This behaviour can be avoided by using its `-n` flag.
 
 
 # TODO:
-- [ ] fix Traceback::highlighting
-- [x] write integration test which uses files in `programs/` as testcases
+- [ ] in parser iterate over unicodes instead of chars
+- [ ] fix traceback to work with unicodes
+- [ ] use ctrl c in getchar
 - [ ] CI: put fuzzing into different job
 - [ ] `--wrapping` allow to wrap around the tape
 - [ ] `--size` set tape size
 - [ ] add a cool logo
-- [ ] `!TAPE` doesn't work sometimes

@@ -30,8 +30,8 @@ This behaviour can be avoided by using its `-n` flag.
 
 
 # TODO:
-- [ ] fix traceback tests
-- [ ] write integration test which uses files in `programs/` as testcases
+- [ ] fix Traceback::highlighting
+- [x] write integration test which uses files in `programs/` as testcases
 - [ ] CI: put fuzzing into different job
 - [ ] `--wrapping` allow to wrap around the tape
 - [ ] `--size` set tape size

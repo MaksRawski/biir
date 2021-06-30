@@ -119,7 +119,7 @@ impl Parser{
                 ']' => self.leave_loop(),
                 '!' => {
                     if debug_mode && program[self.program_counter..self.program_counter+5] == *"!TAPE"{
-                        self.output.write( format!("!TAPE: {}\n", self.tape) );
+                        self.output.write( format!("{}: {}\n", "!TAPE".yellow(), self.tape) );
                     }
                     Ok( () )
                 },
@@ -130,8 +130,8 @@ impl Parser{
             // we return only if there was an error
             if let Err(e) = error{
                 let error_msg = match e{
-                    Error::Syntax(msg) => format!("{} {}", "Syntax error".red(), msg.normal()),
-                    Error::Runtime(msg) => format!("{} {}", "Runtime error".red(), msg.normal()),
+                    Error::Syntax(msg) => format!("{} {}", "Syntax error:".red(), msg.normal()),
+                    Error::Runtime(msg) => format!("{} {}", "Runtime error:".red(), msg.normal()),
                 };
                 let tb = Traceback::traceback(program, self.program_counter, &error_msg);
             }
@@ -144,7 +144,7 @@ impl Parser{
             self.output.write( format!("") );
         }
         if debug_mode{
-            self.output.write( format!("----DEBUG INFO-----\n{}\n", self.tape) );
+            self.output.write( format!("----{}-----\n{}\n", "DEBUG INFO".yellow(), self.tape) );
         }
         Ok( () )
     }

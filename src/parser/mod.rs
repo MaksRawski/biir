@@ -94,11 +94,13 @@ impl Parser{
         }
     }
 
-    pub fn run(&mut self, file: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
+    pub fn run<P: AsRef<std::path::Path>>(&mut self, file: P, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
         let program: String;
-        match fs::read_to_string(file){
+        let file_path = file.as_ref();
+
+        match fs::read_to_string(file_path){
             Ok(v) => program = v,
-            Err(_) => return Err( format!("File {} could not be read!", file) ),
+            Err(e) => return Err( format!("Error occured while reading {}: {}", file_path.display(), e) ),
         }
         self.execute(&program, numerical_mode, debug_mode)
     }

@@ -119,7 +119,7 @@ impl Parser{
                 ']' => self.leave_loop(),
                 '!' => {
                     if debug_mode && program[self.program_counter..self.program_counter+5] == *"!TAPE"{
-                        self.output.write( format!("!TAPE: {}", self.tape) );
+                        self.output.write( format!("!TAPE: {}\n", self.tape) );
                     }
                     Ok( () )
                 },
@@ -144,7 +144,7 @@ impl Parser{
             self.output.write( format!("") );
         }
         if debug_mode{
-            self.output.write( format!("----DEBUG INFO-----\n{}", self.tape) );
+            self.output.write( format!("----DEBUG INFO-----\n{}\n", self.tape) );
         }
         Ok( () )
     }

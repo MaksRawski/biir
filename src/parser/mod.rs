@@ -108,7 +108,9 @@ impl Parser{
     pub fn execute(&mut self, program: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
         // TODO: iterate over graphemes instead
         while self.program_counter < program.len(){
-            let error: Result<(), Error> = match program.chars().nth(self.program_counter).unwrap_or(' '){
+            let current_char = program.chars().filter(|c| *c != '\n').nth(self.program_counter);
+
+            let error: Result<(), Error> = match current_char.unwrap_or(' '){
                 '-' => Ok( self.tape.dec() ),
                 '+' => Ok( self.tape.inc() ),
                 '<' => self.tape.move_left(),
@@ -125,7 +127,6 @@ impl Parser{
                 },
                 _ => Ok( () ),
             };
-            self.program_counter += 1;
 
             // we return only if there was an error
             if let Err(e) = error{
@@ -134,7 +135,10 @@ impl Parser{
                     Error::Runtime(msg) => format!("{} {}", "Runtime error:".red(), msg.normal()),
                 };
                 let tb = Traceback::traceback(program, self.program_counter, &error_msg);
+                return Err( tb.unwrap_or(format!("Error occured while trying to print traceback")) );
             }
+
+            self.program_counter += 1;
         }
         // we want to print newline at the end but
         // not when in numerical mode because it already prints one

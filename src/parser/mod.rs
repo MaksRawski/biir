@@ -100,7 +100,11 @@ impl Parser{
 
         match fs::read_to_string(file_path){
             Ok(v) => program = v,
-            Err(e) => return Err( format!("Error occured while reading {}: {}", file_path.display(), e) ),
+            Err(e) => return Err(
+                format!("Error occured while reading {}: {}",
+                    file_path.display().to_string().bold(),
+                e)
+            ),
         }
         self.execute(&program, numerical_mode, debug_mode)
     }

@@ -3,6 +3,7 @@ use colored::*;
 pub struct Traceback;
 
 impl Traceback {
+    /// indexes from 0
     fn line_number(program: &str, program_counter: usize) -> Result<usize, ()> {
         let mut acc = program_counter as isize;
         let mut current_line: isize = -1;
@@ -24,6 +25,7 @@ impl Traceback {
         Ok(current_line as usize)
     }
 
+    /// indexes from 1
     fn char_number(program: &str, line_nr: usize, program_counter: usize) -> usize {
         // this should fail if there is mismatch between line_nr and program_counter
         // however we trust that it's fine and don't check that explicitly
@@ -37,7 +39,6 @@ impl Traceback {
 
     /// returns entire line but with the current char red
     /// will return an Error on empty string
-    // TODO: patch to work for unicodes
     fn highlight_current_char_in_line(current_line: &str, char_nr: usize) -> Result<String, ()> {
         Ok(format!(
             "{}{}{}",
@@ -66,7 +67,7 @@ impl Traceback {
 
         Ok(format!(
             "{}\non line {}, char {}:\n{}\n",
-            error_msg, line_nr, char_nr, highlighted_current_line
+            error_msg, line_nr + 1, char_nr, highlighted_current_line
         ))
     }
 }

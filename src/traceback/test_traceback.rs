@@ -30,6 +30,7 @@ fn test_char_nr(program: &str, line_nr: usize, program_counter: usize, expected_
 
 proptest!{
     #[test]
+    #[ignore]
     fn test_highlighting(index: usize, test_text: String) {
         // skip empty strings as they're supposed to return Err
         if test_text.len() == 0 { return Ok( () ) }

@@ -1,0 +1,21 @@
+# Changelog:
+
+# 1.2.1
+- unicodes
+
+# 1.2.0
+- COLORS!!!
+- traceback, will show information about the point of the program where it failed
+- wrote a LOT of tests and fixed bugs
+
+## 1.1.1
+- exit on Ctrl-c
+
+## 1.1.0
+- better input handling
+- more consistent formatting
+
+## 1.0.0
+- First release! 🥳
+- debug mode
+- numerical mode

@@ -1,5 +1,7 @@
 # BIIR - Brainfuck Interpreter In Rust
 
+[![pipeline status](https://gitlab.com/MaksRawski/biir/badges/develop/pipeline.svg)](https://gitlab.com/MaksRawski/biir/-/commits/develop)
+
 # Installation
 `cargo install biir`
 
@@ -7,11 +9,11 @@
 `biir filename.bf`
 
 ## Numerical mode
-Available through `-n`or `--numerical-mode`.
+Available through `-n` or `--numerical-mode`.
 Prints byte values instead of their ascii representations.
 
 ## Debug mode
-Entered via `-d` or`--debug-mode`.
+Entered via `-d` or `--debug-mode`.
 Allows the usage of `!TAPE` to print 10 nearby (already created) cells and
 also prints some debug info at the end of the execution.
 
@@ -28,11 +30,10 @@ This behaviour can be avoided by using its `-n` flag.
 
 
 # TODO:
-- [x] write a proper README
-- [x] clap - argument parsing
-- [x] parse files,
-- [x] `-d` debug mode, prints tape at the end, enables the use of `!TAPE` to print 10 nearest values on the tape at any point of the program
-- [x] `-n` numerical mode, prints values themselves instead of interpreting them as ascii.
-- [ ] write tests
-- [ ] configure gitlab ci to run tests automatically
-- [ ] add a CI badge to README
+- [ ] in parser iterate over unicodes instead of chars
+- [ ] fix traceback to work with unicodes
+- [ ] use ctrl c in getchar
+- [ ] CI: put fuzzing into different job
+- [ ] `--wrapping` allow to wrap around the tape
+- [ ] `--size` set tape size
+- [ ] add a cool logo

@@ -1,13 +1,17 @@
 use std::fs;
 use std::num::Wrapping;
+use colored::*;
 
 use crate::tape::Tape;
-use crate::utils::getchar;
+use crate::utils::{getchar, Output};
+use crate::traceback::Traceback;
+use crate::error::Error;
 
 pub struct Parser{
     tape: Tape,
-    program_counter: usize,
     stack: Vec<usize>,
+    pub program_counter: usize,
+    pub output: Output,
 }
 
 impl Parser{
@@ -15,12 +19,13 @@ impl Parser{
         Self{
             tape: Tape::new(),
             program_counter: 0,
-            stack: Vec::new()
+            stack: Vec::new(),
+            output: Output::Stdout(std::io::stdout()),
         }
     }
 
     // TODO: improve this
-    pub fn find_closing_bracket(&self, program: &str) -> Result<usize, ()>{
+    fn find_closing_bracket(&self, program: &str) -> Result<usize, ()>{
         let mut depth = 0;
         for i in self.program_counter..program.len(){
             let current_char = program.chars().nth(i).unwrap();
@@ -37,33 +42,33 @@ impl Parser{
         Err( () )
     }
 
-    fn handle_comma(&mut self) -> Result<(), String>{
+    fn handle_comma(&mut self) -> Result<(), Error>{
         let input = getchar();
         match input{
             Ok(v) => Ok( self.tape.set_current_value( Wrapping(v) )),
-            Err(e) => Err( format!("Runtime error: {}", e) ),
+            Err(e) => Err( Error::Runtime(e) ),
         }
     }
 
-    fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), String>{
+    fn handle_dot(&mut self, numerical_mode: bool) -> Result<(), Error>{
         if numerical_mode{
-            println!("{}", self.tape.current_value);
+            self.output.write( format!("{}\n", self.tape.current_value) );
         }
         else{
-            print!("{}", self.tape.current_value.0 as char);
+            self.output.write( format!("{}", self.tape.current_value.0 as char) );
         }
         Ok( () )
     }
 
 
-    fn enter_loop(&mut self, program: &str) -> Result<(), String>{
+    fn enter_loop(&mut self, program: &str) -> Result<(), Error>{
         if self.tape.current_value.0 == 0{
             match self.find_closing_bracket(program){
                 Ok(v) => {
                     self.program_counter = v;
                     Ok( () )
                 }
-                Err(_) => Err( String::from("Syntax error: '[' doesn't have matching closing bracket" ) )
+                Err(_) => Err( Error::Syntax("'[' doesn't have a matching closing bracket!".to_string()) )
             }
         }
         else{
@@ -72,7 +77,7 @@ impl Parser{
         }
     }
 
-    fn leave_loop(&mut self) -> Result<(), String>{
+    fn leave_loop(&mut self) -> Result<(), Error>{
         match self.stack.last(){
             Some(v) => {
                 if self.tape.current_value.0 == 0{
@@ -84,23 +89,32 @@ impl Parser{
                 Ok( () )
             },
             None => {
-                Err( String::from("Syntax error: ']' doesn't have matching opening bracket!") )
+                Err( Error::Syntax("']' doesn't have a matching opening bracket!".to_string()) )
             }
         }
     }
 
-    pub fn run(&mut self, file: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
+    pub fn run<P: AsRef<std::path::Path>>(&mut self, file: P, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
         let program: String;
-        match fs::read_to_string(file){
+        let file_path = file.as_ref();
+
+        match fs::read_to_string(file_path){
             Ok(v) => program = v,
-            Err(_) => return Err( format!("File {} could not be read", file) ),
+            Err(e) => return Err(
+                format!("Error occured while reading {}: {}",
+                    file_path.display().to_string().bold(),
+                e)
+            ),
         }
         self.execute(&program, numerical_mode, debug_mode)
     }
 
     pub fn execute(&mut self, program: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
+        // TODO: iterate over graphemes instead
         while self.program_counter < program.len(){
-            let error: Result<(), String> = match program.chars().nth(self.program_counter).unwrap_or(' '){
+            let current_char = program.chars().filter(|c| *c != '\n').nth(self.program_counter);
+
+            let error: Result<(), Error> = match current_char.unwrap_or(' '){
                 '-' => Ok( self.tape.dec() ),
                 '+' => Ok( self.tape.inc() ),
                 '<' => self.tape.move_left(),
@@ -111,31 +125,38 @@ impl Parser{
                 ']' => self.leave_loop(),
                 '!' => {
                     if debug_mode && program[self.program_counter..self.program_counter+5] == *"!TAPE"{
-                        // use some utility for printing to stdout
-                        println!("!TAPE: {}", self.tape);
+                        self.output.write( format!("{}: {}\n", "!TAPE".yellow(), self.tape) );
                     }
                     Ok( () )
                 },
                 _ => Ok( () ),
             };
-            self.program_counter += 1;
 
             // we return only if there was an error
             if let Err(e) = error{
-                return Err( format!("[char: {}] {}", self.program_counter, e) );
+                let error_msg = match e{
+                    Error::Syntax(msg) => format!("{} {}", "Syntax error:".red(), msg.normal()),
+                    Error::Runtime(msg) => format!("{} {}", "Runtime error:".red(), msg.normal()),
+                };
+                let tb = Traceback::traceback(program, self.program_counter, &error_msg);
+                return Err( tb.unwrap_or(format!("Error occured while trying to print traceback")) );
             }
+
+            self.program_counter += 1;
         }
         // we want to print newline at the end but
         // not when in numerical mode because it already prints one
         // TODO: if we run in debug mode and there was no output
         // we will get an extra empty line, this isn't necesserially desired
         if !numerical_mode{
-            println!("");
+            self.output.write( format!("") );
         }
         if debug_mode{
-            println!("----DEBUG INFO-----\n{}", self.tape);
-
+            self.output.write( format!("----{}-----\n{}\n", "DEBUG INFO".yellow(), self.tape) );
         }
         Ok( () )
     }
 }
+
+#[cfg(test)]
+mod test_parser;

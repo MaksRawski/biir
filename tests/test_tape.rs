@@ -7,7 +7,7 @@ mod test_tape{
     use super::*;
 
     #[test]
-    #[ignore]
+    #[should_panic]
     fn test_invalid_position(){
         // set_current_value can panic but it won't if ve use move_* functions
         let mut tape = Tape::new();

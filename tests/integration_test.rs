@@ -1,10 +1,25 @@
 #[cfg(test)]
 extern crate biir;
 
+use colored::*;
+use regex::Regex;
 use std::fs;
 
 use biir::parser::Parser;
 use biir::utils::Output;
+
+#[test]
+fn test_tape() {
+    let mut parser = Parser::new();
+    parser.output = Output::Vector(Vec::new());
+    let program = "!TAPE\n+!TAPE\n+!TAPE";
+    // using .* to make up for color
+    let expected_output =
+        Regex::new(r"(?m).*!TAPE.*: \[0\] \n.*!TAPE.*: \[1\] \n.*!TAPE.*: \[2\]").unwrap();
+
+    assert_eq!(parser.execute(program, false, true), Ok(()));
+    assert!(expected_output.is_match(&parser.output.read()));
+}
 
 #[test]
 fn test_example_programs() {

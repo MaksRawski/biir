@@ -1,6 +1,7 @@
 # BIIR - Brainfuck Interpreter In Rust
 
-[![pipeline status](https://gitlab.com/MaksRawski/biir/badges/develop/pipeline.svg)](https://gitlab.com/MaksRawski/biir/-/commits/develop)
+[![tests](https://gitlab.com/MaksRawski/biir/badges/master/pipeline.svg)](https://gitlab.com/MaksRawski/biir/-/commits/master)
+[![codecov](https://codecov.io/gh/MaksRawski/biir/branch/develop/graph/badge.svg?token=6YIXCT104V)](https://codecov.io/gh/MaksRawski/biir)
 
 # Installation
 `cargo install biir`
@@ -33,7 +34,8 @@ This behaviour can be avoided by using its `-n` flag.
 - [ ] in parser iterate over unicodes instead of chars
 - [ ] fix traceback to work with unicodes
 - [ ] use ctrl c in getchar
-- [ ] CI: put fuzzing into different job
+- [x] CI: put fuzzing into different job
+- [x] CI: code coverage
 - [ ] `--wrapping` allow to wrap around the tape
 - [ ] `--size` set tape size
 - [ ] add a cool logo

@@ -1,5 +1,6 @@
 use std::fs;
 use std::num::Wrapping;
+use unicode_segmentation::UnicodeSegmentation;
 use colored::*;
 
 use crate::tape::Tape;
@@ -14,6 +15,8 @@ pub struct Parser{
     pub output: Output,
 }
 
+type UnicodeString<'a> = Vec<&'a str>;
+
 impl Parser{
     pub fn new() -> Self{
         Self{
@@ -24,15 +27,17 @@ impl Parser{
         }
     }
 
-    // TODO: improve this
-    fn find_closing_bracket(&self, program: &str) -> Result<usize, ()>{
+    /// returns offset from current program_counter
+    /// to the matching closing bracket
+    fn find_closing_bracket(&self, program: &UnicodeString) -> Result<usize, ()>{
         let mut depth = 0;
-        for i in self.program_counter..program.len(){
-            let current_char = program.chars().nth(i).unwrap();
-            if current_char == '['{
+        let program = program.iter().skip(self.program_counter);
+
+        for (i, current_char) in program.enumerate(){
+            if *current_char == "["{
                 depth += 1;
             }
-            else if current_char == ']'{
+            else if *current_char == "]"{
                 depth -= 1;
                 if depth == 0{
                     return Ok(i);
@@ -61,11 +66,11 @@ impl Parser{
     }
 
 
-    fn enter_loop(&mut self, program: &str) -> Result<(), Error>{
+    fn enter_loop(&mut self, program: &UnicodeString) -> Result<(), Error>{
         if self.tape.current_value.0 == 0{
             match self.find_closing_bracket(program){
                 Ok(v) => {
-                    self.program_counter = v;
+                    self.program_counter = self.program_counter + v;
                     Ok( () )
                 }
                 Err(_) => Err( Error::Syntax("'[' doesn't have a matching closing bracket!".to_string()) )
@@ -110,28 +115,29 @@ impl Parser{
     }
 
     pub fn execute(&mut self, program: &str, numerical_mode: bool, debug_mode: bool) -> Result<(), String>{
-        let filtered_program = program.chars().filter(|c| *c != '\n').collect::<String>();
+        self.program_counter = 0;
 
-        // TODO: iterate over graphemes instead
-        while self.program_counter < filtered_program.chars().count(){
-            let current_char = filtered_program.chars().nth(self.program_counter);
-            let error: Result<(), Error> = match current_char.unwrap_or(' '){
-                '-' => Ok( self.tape.dec() ),
-                '+' => Ok( self.tape.inc() ),
-                '<' => self.tape.move_left(),
-                '>' => self.tape.move_right(),
-                ',' => self.handle_comma(),
-                '.' => self.handle_dot(numerical_mode),
-                '[' => self.enter_loop(&filtered_program),
-                ']' => self.leave_loop(),
-                '!' => {
-                    let next_5_chars = filtered_program
-                        .chars()
-                        .skip(self.program_counter)
-                        .take(5)
-                        .collect::<String>();
+        let graphemes = program
+            .graphemes(true)
+            .filter(|c| !c.contains('\n'))
+            .collect::<UnicodeString>();
 
-                    if debug_mode && next_5_chars == "!TAPE"{
+        while self.program_counter < graphemes.len(){
+            let current_char = graphemes.iter().nth(self.program_counter);
+
+            let error: Result<(), Error> = match *current_char.unwrap_or(&&" "){
+                "-" => Ok( self.tape.dec() ),
+                "+" => Ok( self.tape.inc() ),
+                "<" => self.tape.move_left(),
+                ">" => self.tape.move_right(),
+                "," => self.handle_comma(),
+                "." => self.handle_dot(numerical_mode),
+                "[" => self.enter_loop(&graphemes),
+                "]" => self.leave_loop(),
+                "!" => {
+                    let next_5_chars = &graphemes[self.program_counter..self.program_counter+5].concat();
+
+                    if debug_mode && *next_5_chars == "!TAPE"{
                         self.output.write( format!("{}: {}\n", "!TAPE".yellow(), self.tape) );
                     }
                     Ok( () )

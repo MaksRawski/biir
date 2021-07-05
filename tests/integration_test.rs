@@ -4,21 +4,33 @@ extern crate biir;
 use colored::*;
 use regex::Regex;
 use std::fs;
+use test_case::test_case;
 
 use biir::parser::Parser;
 use biir::utils::Output;
 
-#[test]
-fn test_tape() {
+#[test_case( "!TAPE\n+!TAPE\n+!TAPE",
+    r"(?m).*!TAPE.*: \[0\] \n.*!TAPE.*: \[1\] \n.*!TAPE.*: \[2\]" ; "!TAPE")]
+fn test_output(program: &str, expected_output: &str) {
     let mut parser = Parser::new();
     parser.output = Output::Vector(Vec::new());
-    let program = "!TAPE\n+!TAPE\n+!TAPE";
-    // using .* to make up for color
-    let expected_output =
-        Regex::new(r"(?m).*!TAPE.*: \[0\] \n.*!TAPE.*: \[1\] \n.*!TAPE.*: \[2\]").unwrap();
+
+    let expected_output = Regex::new(expected_output).unwrap();
 
     assert_eq!(parser.execute(program, false, true), Ok(()));
     assert!(expected_output.is_match(&parser.output.read()));
+}
+
+#[test_case("[", r"Syntax error.*\n.*char 1:\n"; "Syntax error")]
+#[test_case("<", r"Runtime error.*\n.*char 1:\n"; "Runtime error")]
+fn test_error_messages(program: &str, expected_error_message: &str) {
+    let mut parser = Parser::new();
+    parser.output = Output::Vector(Vec::new());
+
+    let expected_error_message = Regex::new(expected_error_message).unwrap();
+    let error_msg = parser.execute(program, false, true).err().unwrap();
+
+    assert!(expected_error_message.is_match(&error_msg));
 }
 
 #[test]

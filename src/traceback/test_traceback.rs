@@ -28,6 +28,26 @@ fn test_char_nr(program: &str, line_nr: usize, program_counter: usize, expected_
     assert_eq!(Traceback::char_number(program, line_nr, program_counter), expected_char_nr);
 }
 
+#[test_case("😎BC\n🥳EFG\nHI", 0, 0)]
+#[test_case("😎BC\n🥳EFG\nHI", 2, 0)]
+#[test_case("😎BC\n🥳EFG\nHI", 3, 1)]
+#[test_case("😎BC\n🥳EFG\nHI", 6, 1)]
+#[test_case("😎BC\n🥳EFG\nHI", 7, 2)]
+#[test_case("😎BC\n🥳EFG\nHI", 8, 2)]
+fn test_line_nr_unicodes(program: &str, program_counter: usize, expected_line_nr: usize){
+    assert_eq!(Traceback::line_number(program, program_counter), Ok( expected_line_nr) );
+}
+
+#[test_case("😎BC\n🥳EFG\nHI", 0, 0, 0)]
+#[test_case("😎BC\n🥳EFG\nHI", 0, 2, 2)]
+#[test_case("😎BC\n🥳EFG\nHI", 1, 3, 0)]
+#[test_case("😎BC\n🥳EFG\nHI", 1, 6, 3)]
+#[test_case("😎BC\n🥳EFG\nHI", 2, 7, 0)]
+#[test_case("😎BC\n🥳EFG\nHI", 2, 8, 1)]
+fn test_char_nr_unicodes(program: &str, line_nr: usize, program_counter: usize, expected_char_nr: usize){
+    assert_eq!(Traceback::char_number(program, line_nr, program_counter), expected_char_nr);
+}
+
 proptest!{
     #[test]
     #[ignore]

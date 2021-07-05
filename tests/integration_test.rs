@@ -23,6 +23,8 @@ fn test_output(program: &str, expected_output: &str) {
 
 #[test_case("[", r"Syntax error.*\n.*char 1:\n"; "Syntax error")]
 #[test_case("<", r"Runtime error.*\n.*char 1:\n"; "Runtime error")]
+#[test_case("😎[", r".*Syntax error.*\n.*char 2.*"; "Syntax error with unicodes")]
+#[test_case("😎<", r"Runtime error.*\n.*char 2:\n"; "Runtime error with unicodes")]
 fn test_error_messages(program: &str, expected_error_message: &str) {
     let mut parser = Parser::new();
     parser.output = Output::Vector(Vec::new());

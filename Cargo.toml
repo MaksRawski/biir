@@ -1,6 +1,6 @@
 [package]
 name = "biir"
-version = "1.2.1"
+version = "1.2.2"
 authors = ["Maks Rawski <maksymilian.rawski@tutanota.com>"]
 edition = "2018"
 description = "Brainfuck Interpreter In Rust"

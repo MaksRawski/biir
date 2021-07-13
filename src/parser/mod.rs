@@ -1,12 +1,12 @@
 use std::fs;
 use std::num::Wrapping;
-use unicode_segmentation::UnicodeSegmentation;
 use colored::*;
 
 use crate::tape::Tape;
 use crate::utils::{getchar, Output};
 use crate::traceback::Traceback;
 use crate::error::Error;
+use crate::unicodes::*;
 
 pub struct Parser{
     tape: Tape,
@@ -14,8 +14,6 @@ pub struct Parser{
     pub program_counter: usize,
     pub output: Output,
 }
-
-type UnicodeString<'a> = Vec<&'a str>;
 
 impl Parser{
     pub fn new() -> Self{

@@ -1,7 +1,7 @@
 # BIIR - Brainfuck Interpreter In Rust
 
 [![tests](https://gitlab.com/MaksRawski/biir/badges/master/pipeline.svg)](https://gitlab.com/MaksRawski/biir/-/commits/master)
-[![codecov](https://codecov.io/gh/MaksRawski/biir/branch/develop/graph/badge.svg?token=6YIXCT104V)](https://codecov.io/gh/MaksRawski/biir)
+[![coverage](https://codecov.io/gh/MaksRawski/biir/branch/master/graph/badge.svg?token=6YIXCT104V)](https://codecov.io/gh/MaksRawski/biir)
 
 # Installation
 `cargo install biir`

@@ -1,9 +1,7 @@
 use super::*;
 use test_case::test_case;
-use proptest::prelude::*;
 
 use crate::unicodes::*;
-use unicode_segmentation::UnicodeSegmentation;
 
 // Unfortunetly we can't just put those test_cases
 // above definitions as they're inside impl block.
@@ -78,26 +76,4 @@ fn test_char_nr_unicodes(
 fn test_highlighting(index: usize, test_text: &str) -> String {
     let test_text = &string_to_unicode_string(test_text);
     Traceback::highlight_current_char_in_line(test_text, index).unwrap()
-}
-
-proptest! {
-    // TODO: this gives false results
-    // 𝚨 is actaully handled correctly
-    #[ignore]
-    #[test]
-    fn fuzz_highlighting(index: usize, test_text: String){
-        let test_text = string_to_unicode_string(&test_text);
-        let output = Traceback::highlight_current_char_in_line(&test_text, index);
-
-        if test_text.len() == 0 {
-            assert!(output.is_err());
-            return Ok( () );
-        }
-        let output = output.unwrap();
-
-        let current_char = test_text.iter().nth(index).unwrap();
-        let index_of_colored_char = output.find(current_char).unwrap();
-
-        assert_eq!(index_of_colored_char, index);
-    }
 }

@@ -6,9 +6,3 @@ tests:
   stage: test
   script:
     - cargo test --verbose --jobs 1
-
-fuzzers:
-  image: rustdocker/rust:stable
-  stage: test
-  script:
-    - cargo test --verbose --jobs 1 -- --ignored

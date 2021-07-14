@@ -1,7 +1,10 @@
 # Changelog:
 
+# 1.2.3
+- better handling of ctrl-c
+
 # 1.2.2
-- unicodes
+- unicodes support
 
 # 1.2.1
 - !TAPE is working again

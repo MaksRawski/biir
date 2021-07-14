@@ -1,3 +1,4 @@
+use crate::unicodes::*;
 use colored::*;
 
 pub struct Traceback;
@@ -27,7 +28,7 @@ impl Traceback {
 
     /// indexes from 0
     fn char_number(program: &str, line_nr: usize, program_counter: usize) -> usize {
-        // this should fail if there is mismatch between line_nr and program_counter
+        // this will fail if there is mismatch between line_nr and program_counter
         // however we trust that it's fine and don't check that explicitly
         let chars_before_current_line: &usize = &program
             .lines()
@@ -39,35 +40,48 @@ impl Traceback {
 
     /// returns entire line but with the current char red
     /// will return an Error on empty string
-    fn highlight_current_char_in_line(current_line: &str, char_nr: usize) -> Result<String, ()> {
-        Ok(format!(
-            "{}{}{}",
-            current_line.chars().take(char_nr).collect::<String>(),
-            current_line
-                .chars()
-                .nth(char_nr)
-                .ok_or(())?
-                .to_string()
-                .red(),
-            current_line
-                .chars()
-                .skip(char_nr + 1)
-                .take(current_line.chars().count() - char_nr)
-                .collect::<String>(),
-        ))
+    fn highlight_current_char_in_line<'a>(
+        current_line: &'a UnicodeString,
+        char_nr: usize,
+    ) -> Result<String, ()> {
+        // it may seem as fold is a very costy way of collecting
+        // but it is acutally pretty quick
+        // https://play.rust-lang.org/?version=nightly&mode=release&edition=2018&gist=77ccd7e84e8c4c9f827d7b04711c94fb
+        let before_current_char = current_line
+            .iter()
+            .take(char_nr)
+            .fold(String::new(), |acc, x| acc + x);
+
+        let current_char = current_line
+            .iter()
+            .nth(char_nr)
+            .ok_or(())?
+            .red();
+
+        let after_current_char = current_line
+            .iter()
+            .skip(char_nr + 1)
+            .take(current_line.len() - char_nr)
+            .fold(String::new(), |acc, x| acc + x);
+
+        Ok( format!("{}{}{}", before_current_char, current_char, after_current_char) )
     }
 
     pub fn traceback(program: &str, program_counter: usize, error_msg: &str) -> Result<String, ()> {
         let line_nr = Traceback::line_number(program, program_counter)?;
         let current_line = program.lines().nth(line_nr).ok_or(())?;
+        let current_line = string_to_unicode_string(current_line);
         let char_nr = Traceback::char_number(program, line_nr, program_counter);
 
         let highlighted_current_line =
-            Traceback::highlight_current_char_in_line(current_line, char_nr)?;
+            Traceback::highlight_current_char_in_line(&current_line, char_nr)?;
 
         Ok(format!(
             "{}\non line {}, char {}:\n{}\n",
-            error_msg, line_nr + 1, char_nr + 1, highlighted_current_line
+            error_msg,
+            line_nr + 1,
+            char_nr + 1,
+            highlighted_current_line
         ))
     }
 }

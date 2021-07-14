@@ -1,4 +1,7 @@
-stable:cargo:
+stages:
+  - test
+
+tests:
   image: rustdocker/rust:stable
   stage: test
   script:

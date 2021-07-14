@@ -5,7 +5,7 @@ use biir::parser::Parser;
 
 fn main() {
     let args = App::new("BIIR")
-        .version("1.0")
+        .version("1.2.2")
         .author("Maks Rawski <maksymilian.rawski@tutanota.com>")
         .about("Brainfuck Interpreter In Rust")
         .arg(Arg::with_name("file")

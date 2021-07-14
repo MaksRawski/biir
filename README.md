@@ -31,13 +31,4 @@ This behaviour can be avoided by using its `-n` flag.
 
 
 # TODO:
-- [x] in parser iterate over unicodes instead of chars
-- [x] add tests for error messages
-- [x] fix traceback to work with unicodes
-- [ ] switch to `cargo fuzz` or fuzzcheck from proptest
-- [ ] use ctrl c in getchar
-- [x] CI: put fuzzing into different job
-- [x] CI: code coverage
-- [ ] `--wrapping` allow to wrap around the tape
-- [ ] `--size` set tape size
 - [ ] add a cool logo

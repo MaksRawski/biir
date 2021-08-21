@@ -2,6 +2,7 @@ use clap::{App, Arg};
 use std::process;
 
 use biir::parser::Parser;
+use biir::parser::Modes;
 
 fn main() {
     let args = App::new("BIIR")
@@ -25,10 +26,13 @@ fn main() {
 
     let mut parser = Parser::new();
     let file = args.value_of("file").unwrap();
-    let numerical_mode = args.is_present("numerical");
-    let debug_mode = args.is_present("debug");
 
-    if let Err(e) = parser.run(file, numerical_mode, debug_mode) {
+    let modes = Modes{
+        debug: args.is_present("debug"),
+        numerical: args.is_present("numerical"),
+    };
+
+    if let Err(e) = parser.run(file, modes) {
         eprintln!("{}", e);
         process::exit(1);
     }

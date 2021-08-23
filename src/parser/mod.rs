@@ -11,6 +11,7 @@ use crate::utils::{getchar, Output};
 
 type ProgramCounter = usize;
 type BracketsMap = HashMap<ProgramCounter, ProgramCounter>;
+type ErrorWithExtraInfo = (Error, ProgramCounter);
 
 pub struct Modes {
     pub debug: bool,
@@ -56,34 +57,43 @@ impl Parser {
         Ok(None)
     }
 
-    fn find_brackets(program: &str) -> Result<BracketsMap, (Error, ProgramCounter)> {
+    fn find_brackets(program: &str) -> Result<BracketsMap, ErrorWithExtraInfo> {
         let mut brackets = BracketsMap::new();
-        let mut current_index = 0;
+        let mut stack = Vec::new();
 
         for (i, current_char) in program.chars().enumerate() {
             if current_char == '[' {
-                current_index = i;
+                stack.push(i);
             } else if current_char == ']' {
-                if brackets.insert(current_index, i).is_some() {
+                let last_stack_value = stack.pop();
+                if last_stack_value.is_none() {
                     return Err((
                         Error::Syntax(
                             "Closing bracket doesn't have a matching opening bracket!".to_string(),
                         ),
                         i,
                     ));
+                } else {
+                    brackets.insert(last_stack_value.unwrap(), i);
                 }
             }
         }
-        return if !brackets.contains_key(&current_index) {
+
+        // if there still is an opening bracket
+        // that doesn't have a matching ending bracket
+        let last_stack_value = stack.pop();
+        dbg!(last_stack_value);
+
+        if last_stack_value.is_some() && !brackets.contains_key(&last_stack_value.unwrap()) {
             Err((
                 Error::Syntax(
                     "Opening bracket doesn't have a matching closing bracket!".to_string(),
                 ),
-                current_index,
+                last_stack_value.unwrap(),
             ))
         } else {
             Ok(brackets)
-        };
+        }
     }
 
     fn handle_comma(&mut self) -> Result<(), Error> {

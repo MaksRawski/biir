@@ -1,4 +1,3 @@
-use crate::unicodes::*;
 use colored::*;
 
 use crate::error::Error;
@@ -42,10 +41,7 @@ impl Traceback {
 
     /// returns entire line but with the current char red
     /// will return an Error on empty string
-    fn highlight_current_char_in_line<'a>(
-        current_line: &'a UnicodeString,
-        char_nr: usize,
-    ) -> Result<String, ()> {
+    fn highlight_current_char_in_line(current_line: &str, char_nr: usize) -> Result<String, ()> {
         // it may seem as fold is a very costy way of collecting
         // but it is acutally pretty quick
         // https://play.rust-lang.org/?version=nightly&mode=release&edition=2018&gist=77ccd7e84e8c4c9f827d7b04711c94fb
@@ -71,7 +67,6 @@ impl Traceback {
     pub fn traceback(program: &str, program_counter: usize, error: Error) -> String {
         let line_nr = Traceback::line_number(program, program_counter).unwrap();
         let current_line = program.lines().nth(line_nr).ok_or(()).unwrap();
-        let current_line = string_to_unicode_string(current_line);
         let char_nr = Traceback::char_number(program, line_nr, program_counter);
 
         let highlighted_current_line =

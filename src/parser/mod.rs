@@ -1,208 +1,228 @@
-use colored::*;
-use std::collections::HashMap;
-use std::fs;
-use std::num::Wrapping;
+use std::fmt::Display;
 
-use crate::error::Error;
-use crate::tape::Tape;
-use crate::traceback::Traceback;
-use crate::unicodes::*;
-use crate::utils::{getchar, Output};
-
-type ProgramCounter = usize;
-type BracketsMap = HashMap<ProgramCounter, ProgramCounter>;
-type ErrorWithExtraInfo = (Error, ProgramCounter);
-
-pub struct Modes {
-    pub debug: bool,
-    pub numerical: bool,
+#[derive(Debug, PartialEq)]
+pub struct Program {
+    instructions: Vec<Instruction>,
+    pc: usize,
 }
 
-pub struct Parser {
-    tape: Tape,
-    stack: Vec<ProgramCounter>,
-    brackets: BracketsMap,
-    pub program_counter: ProgramCounter,
-    pub output: Output,
-}
-
-impl Parser {
-    pub fn new() -> Self {
+impl Program {
+    fn new() -> Self {
         Self {
-            tape: Tape::new(),
-            program_counter: 0,
-            brackets: HashMap::new(),
-            stack: Vec::new(),
-            output: Output::Stdout(std::io::stdout()),
+            instructions: Vec::new(),
+            pc: 0,
         }
     }
-
-    fn process_char(&mut self, chr: char, modes: &Modes) -> Result<Option<String>, Error> {
-        match chr {
-            '-' => self.tape.dec(),
-            '+' => self.tape.inc(),
-            '<' => return self.tape.move_left().map(|_| None),
-            '>' => return self.tape.move_right().map(|_| None),
-            ',' => return self.handle_comma().map(|_| None),
-            '.' => self.handle_dot(modes.numerical),
-            '[' => self.enter_loop(),
-            ']' => self.leave_loop(),
-            '!' => {
-                if modes.debug {
-                    return Ok(Some(format!("{}: {}\n", "!TAPE".yellow(), self.tape)));
-                }
-            }
-            _ => (),
-        }
-        Ok(None)
+    pub fn reset(&mut self) {
+        self.pc = 0;
     }
-
-    fn find_brackets(program: &str) -> Result<BracketsMap, ErrorWithExtraInfo> {
-        let mut brackets = BracketsMap::new();
-        let mut stack = Vec::new();
-
-        for (i, current_char) in program.chars().enumerate() {
-            if current_char == '[' {
-                stack.push(i);
-            } else if current_char == ']' {
-                let last_stack_value = stack.pop();
-                if last_stack_value.is_none() {
-                    return Err((
-                        Error::Syntax(
-                            "Closing bracket doesn't have a matching opening bracket!".to_string(),
-                        ),
-                        i,
-                    ));
-                } else {
-                    brackets.insert(last_stack_value.unwrap(), i);
-                }
-            }
-        }
-
-        // if there still is an opening bracket
-        // that doesn't have a matching ending bracket
-        let last_stack_value = stack.pop();
-        dbg!(last_stack_value);
-
-        if last_stack_value.is_some() && !brackets.contains_key(&last_stack_value.unwrap()) {
-            Err((
-                Error::Syntax(
-                    "Opening bracket doesn't have a matching closing bracket!".to_string(),
-                ),
-                last_stack_value.unwrap(),
-            ))
-        } else {
-            Ok(brackets)
-        }
+    pub fn next_instruction(&mut self) -> Option<&Instruction> {
+        let i = self.instructions.get(self.pc);
+        self.pc += 1;
+        i
     }
-
-    fn handle_comma(&mut self) -> Result<(), Error> {
-        let input = getchar();
-        match input {
-            Ok(v) => Ok(self.tape.set_current_value(Wrapping(v))),
-            Err(e) => Err(Error::Runtime(e)),
+    pub fn jump(&mut self, addr: usize) {
+        if addr < self.instructions.len() {
+            self.pc = addr;
         }
-    }
-
-    fn handle_dot(&mut self, numerical_mode: bool) {
-        if numerical_mode {
-            self.output.write(format!("{}\n", self.tape.current_value));
-        } else {
-            self.output
-                .write(format!("{}", self.tape.current_value.0 as char));
-        }
-    }
-
-    fn enter_loop(&mut self) {
-        if self.tape.current_value.0 == 0 {
-            self.program_counter = self.brackets[&self.program_counter];
-        } else {
-            self.stack.push(self.program_counter);
-        }
-    }
-
-    fn leave_loop(&mut self) {
-        match self.stack.last() {
-            Some(v) => {
-                if self.tape.current_value.0 == 0 {
-                    self.stack.pop();
-                } else {
-                    self.program_counter = *v;
-                }
-            }
-            // it will fail earlier if there is an
-            // ending bracket but not an opening one
-            None => unreachable!(),
-        }
-    }
-
-    pub fn run<P: AsRef<std::path::Path>>(&mut self, file: P, modes: Modes) -> Result<(), String> {
-        let program: String;
-        let file_path = file.as_ref();
-
-        match fs::read_to_string(file_path) {
-            Ok(v) => program = v,
-            Err(e) => {
-                return Err(format!(
-                    "Error occured while reading {}: {}",
-                    file_path.display().to_string().bold(),
-                    e
-                ))
-            }
-        }
-        self.execute(&program, modes)
-    }
-
-    pub fn execute(&mut self, program: &str, modes: Modes) -> Result<(), String> {
-        self.program_counter = 0;
-
-        let graphemes = program
-            .graphemes(true)
-            .filter(|c| !c.contains('\n'))
-            .collect::<UnicodeString>();
-
-        match Parser::find_brackets(program) {
-            Ok(brackets) => self.brackets = brackets,
-            Err((error, index)) => return Err(Traceback::traceback(&program, index, error)),
-        }
-
-        while self.program_counter < graphemes.len() {
-            // iterate over graphemes but only process chars
-            let current_char = graphemes
-                .iter()
-                .nth(self.program_counter)
-                .unwrap()
-                .chars()
-                .next()
-                .unwrap();
-
-            let res: Result<Option<String>, Error> = self.process_char(current_char, &modes);
-
-            // we return only if there was an error
-            if let Err(e) = res {
-                let tb = Traceback::traceback(&program, self.program_counter, e);
-                return Err(tb);
-            }
-
-            self.program_counter += 1;
-        }
-        // we want to print newline at the end but
-        // not when in numerical mode because it already prints one
-        // TODO: if we run in debug mode and there was no output
-        // we will get an extra empty line, this isn't necesserially desired
-        if !modes.numerical {
-            self.output.write(format!(""));
-        }
-        if modes.debug {
-            self.output.write(format!(
-                "----{}-----\n{}\n",
-                "DEBUG INFO".yellow(),
-                self.tape
-            ));
-        }
-        Ok(())
     }
 }
 
-#[cfg(test)]
-mod test_parser;
+/// starts from 0
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Position {
+    pub line_number: usize,
+    pub char_number: usize,
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "line {}, char {}",
+            self.line_number + 1,
+            self.char_number + 1
+        ))
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Operation {
+    TapeLeft,
+    TapeRight,
+    /// Prints 10 nearby tape values.
+    TapePrint,
+    CellInc,
+    CellDec,
+    CellRead,
+    CellWrite,
+    BeginLoop,
+    EndLoop,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Instruction {
+    /// number of times this operation should be repeated
+    /// NOTE: BeginLoop and EndLoop will always have this set to 1
+    n: u32,
+    op: Operation,
+    /// position of the first character of this operation in source code
+    /// (line number, char number in line)
+    pos: Position,
+}
+
+impl Instruction {
+    fn new(n: u32, op: Operation, pos: Position) -> Self {
+        Self { n, op, pos }
+    }
+    pub fn get_op(&self) -> &Operation {
+        return &self.op;
+    }
+}
+
+pub enum BracketCountMismatch {
+    MoreOpening(Position),
+    MoreClosing(Position),
+}
+
+impl Display for BracketCountMismatch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (bracket, pos) = if let BracketCountMismatch::MoreOpening(pos) = self {
+            ("opening", pos)
+        } else if let BracketCountMismatch::MoreClosing(pos) = self {
+            ("closing", pos)
+        } else {
+            unreachable!();
+        };
+        f.write_fmt(format_args!(
+            "Bracket count mismatch! Extra {} bracket found at {}",
+            bracket, pos
+        ))
+    }
+}
+
+pub struct Parser;
+impl Parser {
+    pub fn parse(src: &str) -> Result<Program, String> {
+        Parser::check_brackets(src).map_err(|e| e.to_string())?;
+
+        let mut program = Program::new();
+        let chars = src.chars().collect::<Vec<_>>();
+        let mut pos = Position {
+            line_number: 0,
+            char_number: 0,
+        };
+
+        let mut i = 0;
+        while i < chars.len() {
+            let c = chars[i];
+            // vim just prints '\r', emacs considers them newlines,
+            // on windows '\r\n' is usually used at the end of lines,
+            // so let's consider standalone '\r' as EOL and skip '\n' that follows
+            if c == '\r' {
+                if i + 1 < chars.len() && chars[i + 1] == '\n' {
+                    i += 1;
+                }
+                pos.line_number += 1;
+                pos.char_number = 0;
+                i += 1;
+                continue;
+            } else if c == '\n' {
+                pos.line_number += 1;
+                pos.char_number = 0;
+                i += 1;
+                continue;
+            }
+
+            // find out how many times a character is repeating, so that we can then
+            // combine, the same operation done multiple times, into single instruction
+            let mut n = 1;
+            let mut j = i + 1;
+            while j < chars.len() && chars[j] == c {
+                n += 1;
+                j += 1;
+            }
+            i = j;
+
+            program.instructions.push(match c {
+                '-' => Instruction::new(n, Operation::CellDec, pos),
+                '+' => Instruction::new(n, Operation::CellInc, pos),
+                '<' => Instruction::new(n, Operation::TapeLeft, pos),
+                '>' => Instruction::new(n, Operation::TapeRight, pos),
+                // it doesn't really make sense to combine these operations below
+                ',' => Instruction::new(1, Operation::CellWrite, pos),
+                '.' => Instruction::new(1, Operation::CellRead, pos),
+                '[' => Instruction::new(1, Operation::BeginLoop, pos),
+                ']' => Instruction::new(1, Operation::EndLoop, pos),
+                '!' => {
+                    if i + 4 < chars.len() && chars[i + 1..i + 5] == ['T', 'A', 'P', 'E'] {
+                        i += 4;
+                        Instruction::new(1, Operation::TapePrint, pos)
+                    } else {
+                        continue;
+                    }
+                }
+                _ => continue,
+            });
+
+            pos.char_number += 1;
+        }
+
+        Ok(program)
+    }
+
+    pub fn check_brackets(src: &str) -> Result<(), BracketCountMismatch> {
+        let mut opening_brackets: Vec<Position> = Vec::new();
+        for (i, line) in src.lines().enumerate() {
+            for (j, char) in line.chars().enumerate() {
+                let pos = Position {
+                    line_number: i,
+                    char_number: j,
+                };
+                if char == '[' {
+                    opening_brackets.push(pos);
+                } else if char == ']' {
+                    if let None = opening_brackets.pop() {
+                        return Err(BracketCountMismatch::MoreClosing(pos));
+                    }
+                }
+            }
+        }
+        if let Some(pos) = opening_brackets.pop() {
+            Err(BracketCountMismatch::MoreOpening(pos))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+#[test]
+fn test_parser() {
+    assert_eq!(
+        Parser::parse("---"),
+        Ok(Program {
+            instructions: vec![Instruction::new(
+                3,
+                Operation::CellDec,
+                Position {
+                    line_number: 0,
+                    char_number: 0
+                }
+            )],
+            pc: 0,
+        })
+    );
+    assert_eq!(
+        Parser::parse("+++\n+++"),
+        Ok(Program {
+            instructions: vec![Instruction::new(
+                6,
+                Operation::CellInc,
+                Position {
+                    line_number: 0,
+                    char_number: 0
+                }
+            )],
+            pc: 0,
+        })
+    );
+}

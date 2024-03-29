@@ -17,6 +17,7 @@ termion = "1.5.6"
 clap = "2.33.3"
 colored = "2"
 unicode-segmentation = "1.1.0"
+getchar = "0.1.2"
 
 [dev-dependencies]
 test-case = "1.1.0"

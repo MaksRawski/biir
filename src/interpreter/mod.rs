@@ -1,41 +1,36 @@
 use colored::*;
-use std::collections::HashMap;
+use getchar::getchar;
 use std::fs;
+use std::io::Write;
 use std::num::Wrapping;
 
-use crate::error::Error;
-use crate::parser::{Parser, Program};
-use crate::tape::Tape;
-use crate::utils::{getchar, Output};
+use crate::{
+    parser::{Operation, Parser, Program},
+    tape::Tape,
+};
 
-type ProgramCounter = usize;
-type BracketsMap = HashMap<ProgramCounter, ProgramCounter>;
 // type ErrorWithExtraInfo = (Error, ProgramCounter);
 
-pub struct Modes {
+pub struct Config {
     pub debug: bool,
     pub numerical: bool,
     pub big_int: bool,
 }
 
-pub struct Interpreter {
-    modes: Modes,
+pub struct Interpreter<'a, W: Write> {
+    config: Config,
     tape: Tape,
-    stack: Vec<ProgramCounter>,
-    brackets: BracketsMap,
-    pub program_counter: ProgramCounter,
-    pub output: Output,
+    program: Program,
+    pub output: &'a mut W,
 }
 
-impl Interpreter {
-    pub fn new(modes: Modes) -> Self {
+impl<'a, W: Write> Interpreter<'a, W> {
+    pub fn new(modes: Config, out: &'a mut W) -> Self {
         Self {
-            modes,
+            config: modes,
             tape: Tape::new(),
-            program_counter: 0,
-            brackets: HashMap::new(),
-            stack: Vec::new(),
-            output: Output::Stdout(std::io::stdout()),
+            program: Program::new(),
+            output: out,
         }
     }
 
@@ -59,46 +54,20 @@ impl Interpreter {
     //     Ok(None)
     // }
 
-    fn handle_comma(&mut self) -> Result<(), Error> {
-        let input = getchar();
-        match input {
-            Ok(v) => Ok(self.tape.set_current_value(Wrapping(v.into()))),
-            Err(e) => Err(Error::Runtime(e)),
-        }
-    }
-
     fn handle_dot(&mut self, numerical_mode: bool) {
         if numerical_mode {
-            self.output.write(format!("{}\n", self.tape.current_value));
+            let _ = self
+                .output
+                .write(format!("{}\n", self.tape.current_value).as_bytes());
         } else {
-            self.output.write(format!(
-                "{}",
-                char::from_u32(self.tape.current_value.0 as u32)
-                    .expect("big-int mode was used without numerical mode!")
-            ));
-        }
-    }
-
-    fn enter_loop(&mut self) {
-        if self.tape.current_value.0 == 0 {
-            self.program_counter = self.brackets[&self.program_counter];
-        } else {
-            self.stack.push(self.program_counter);
-        }
-    }
-
-    fn leave_loop(&mut self) {
-        match self.stack.last() {
-            Some(v) => {
-                if self.tape.current_value.0 == 0 {
-                    self.stack.pop();
-                } else {
-                    self.program_counter = *v;
-                }
-            }
-            // it will fail earlier if there is an
-            // ending bracket but not an opening one
-            None => unreachable!(),
+            let _ = self.output.write(
+                format!(
+                    "{}",
+                    char::from_u32(self.tape.current_value.0 as u32)
+                        .expect("big-int mode was used without numerical mode!")
+                )
+                .as_bytes(),
+            );
         }
     }
 
@@ -126,34 +95,32 @@ impl Interpreter {
         // let's have a vector that stores a beginnging bracket of a given level
         // at a given index e.g. vec![1, 3, 7] would be created for:
         // +[.[<+>[->]]] this makes no sense btw.
-        // TODO: PROVIDE BETTER EXAMPLE
+        // NOPE!!! We need to (ideally) store a map of opening to closing brackets, so that
+        // when we don't enter the loop we go to the matching closing bracket
 
         while let Some(instruction) = program.next_instruction() {
-            // match *instruction {};
-            // if let Err(e) = res {
-            //     let tb = Traceback::traceback(&program, self.program_counter, e);
-            //     return Err(tb);
-            // }
-            // match instruction.get_op() {}
+            match *instruction.get_op() {
+                Operation::TapeLeft => self.tape.move_left(instruction.get_n())?,
+                Operation::TapeRight => self.tape.move_right(instruction.get_n())?,
+                Operation::TapePrint => {
+                    // this is just debug information, so even if this fails it's not fatal
+                    // and it's probably ok to just ignore it
+                    let _ = self
+                        .output
+                        .write(format!("!TAPE: {}", self.tape).as_bytes());
+                }
+                Operation::CellInc => self.tape.inc(instruction.get_n()),
+                Operation::CellDec => self.tape.dec(instruction.get_n()),
+                Operation::CellRead => match getchar() {
+                    Some(c) => self.tape.set_current_value(Wrapping((c as u8).into())),
+                    None => return Err("Failed to getchar!".to_string()),
+                },
 
-            // we want to print newline at the end but
-            // not when in numerical mode because it already prints one
-            // TODO: if we run in debug mode and there was no output
-            // we will get an extra empty line, this isn't necesserially desired
-            // if !self.modes.numerical {
-            //     self.output.write(format!(""));
-            // }
-            // if self.modes.debug {
-            //     self.output.write(format!(
-            //         "----{}-----\n{}\n",
-            //         "DEBUG INFO".yellow(),
-            //         self.tape
-            //     ));
-            // }
+                Operation::CellWrite => self.handle_dot(self.config.numerical),
+                Operation::BeginLoop(_) => self.program.begin_loop(self.tape.current_value.0),
+                Operation::EndLoop => self.program.end_loop(self.tape.current_value.0),
+            };
         }
-        Ok(())
+        return Ok(());
     }
 }
-
-#[cfg(test)]
-mod test_interpreter;

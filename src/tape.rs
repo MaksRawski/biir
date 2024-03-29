@@ -1,7 +1,8 @@
 use std::fmt;
 use std::num::Wrapping;
 
-use crate::error::Error;
+// TODO: create a BigIntTape and CharTape, both of which somehow share this code
+// by having this as implementation of a trait Tape
 
 pub struct Tape {
     pub current_position: usize,
@@ -23,12 +24,12 @@ impl Tape {
         self.current_value = value;
     }
 
-    pub fn move_right(&mut self) -> Result<(), Error> {
+    pub fn move_right(&mut self, n: usize) -> Result<(), String> {
         if self.current_position == usize::MAX {
-            return Err(Error::Runtime("Exceeded tape length".to_string()));
+            return Err("Exceeded tape length".to_string());
         }
 
-        self.current_position += 1;
+        self.current_position += n;
         match self.tape.get(self.current_position) {
             Some(v) => self.current_value = *v,
             None => {
@@ -39,14 +40,12 @@ impl Tape {
         Ok(())
     }
 
-    pub fn move_left(&mut self) -> Result<(), Error> {
+    pub fn move_left(&mut self, n: usize) -> Result<(), String> {
         if self.current_position == usize::MIN {
-            return Err(Error::Runtime(
-                "Tried to go to the negative side of the tape".to_string(),
-            ));
+            return Err("Tried to go to the negative side of the tape".to_string());
         }
 
-        self.current_position -= 1;
+        self.current_position -= n;
         self.current_value = *self.tape.get(self.current_position).unwrap();
         Ok(())
     }

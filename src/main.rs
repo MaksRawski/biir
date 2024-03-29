@@ -2,7 +2,7 @@ use clap::{App, Arg};
 use std::process;
 
 use biir::interpreter::Interpreter;
-use biir::interpreter::Modes;
+use biir::interpreter::Config;
 use biir::parser::Parser;
 
 fn main() {
@@ -35,7 +35,7 @@ fn main() {
         eprintln!("Big int mode is only available when using --numerical-mode");
         process::exit(1);
     }
-    let modes = Modes {
+    let modes = Config {
         debug: args.is_present("debug"),
         numerical: args.is_present("numerical"),
         big_int: args.is_present("big int"),
@@ -50,7 +50,8 @@ fn main() {
         process::exit(1);
     });
 
-    let mut interpreter = Interpreter::new(modes);
+    let out = &mut std::io::stdout();
+    let mut interpreter = Interpreter::new(modes, out);
     if let Err(e) = interpreter.execute(&mut program) {
         eprintln!("{}", e);
         process::exit(1);

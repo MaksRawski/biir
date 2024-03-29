@@ -43,6 +43,7 @@ version = "1.2.2"
 dependencies = [
  "clap",
  "colored",
+ "getchar",
  "proptest",
  "regex",
  "termion",
@@ -114,6 +115,15 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+
+[[package]]
+name = "getchar"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2828ffe17b0dc6db94a7756b2c60c1e4f9c318ee271fb5c4c96bf3261c60d546"
+dependencies = [
+ "termion",
+]
 
 [[package]]
 name = "getrandom"

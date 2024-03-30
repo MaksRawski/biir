@@ -9,8 +9,6 @@ use crate::{
     tape::Tape,
 };
 
-// type ErrorWithExtraInfo = (Error, ProgramCounter);
-
 pub struct Config {
     pub debug: bool,
     pub numerical: bool,
@@ -28,31 +26,11 @@ impl<'a, W: Write> Interpreter<'a, W> {
     pub fn new(modes: Config, out: &'a mut W) -> Self {
         Self {
             config: modes,
-            tape: Tape::new(),
-            program: Program::new(),
+            tape: Tape::default(),
+            program: Program::default(),
             output: out,
         }
     }
-
-    // fn process_char(&mut self, chr: char) -> Result<Option<String>, Error> {
-    //     match chr {
-    //         '-' => self.tape.dec(),
-    //         '+' => self.tape.inc(),
-    //         '<' => return self.tape.move_left().map(|_| None),
-    //         '>' => return self.tape.move_right().map(|_| None),
-    //         ',' => return self.handle_comma().map(|_| None),
-    //         '.' => self.handle_dot(self.modes.numerical),
-    //         '[' => self.enter_loop(),
-    //         ']' => self.leave_loop(),
-    //         '!' => {
-    //             if self.modes.debug {
-    //                 return Ok(Some(format!("{}: {}\n", "!TAPE".yellow(), self.tape)));
-    //             }
-    //         }
-    //         _ => (),
-    //     }
-    //     Ok(None)
-    // }
 
     fn handle_dot(&mut self, numerical_mode: bool) {
         if numerical_mode {
@@ -90,14 +68,6 @@ impl<'a, W: Write> Interpreter<'a, W> {
     }
 
     pub fn execute(&mut self, program: &mut Program) -> Result<(), String> {
-        // let mut opening_brackets_stack: Vec<Position> = Vec::new();
-        // TODO: let's keep brackets map at runtime only
-        // let's have a vector that stores a beginnging bracket of a given level
-        // at a given index e.g. vec![1, 3, 7] would be created for:
-        // +[.[<+>[->]]] this makes no sense btw.
-        // NOPE!!! We need to (ideally) store a map of opening to closing brackets, so that
-        // when we don't enter the loop we go to the matching closing bracket
-
         while let Some(instruction) = program.next_instruction() {
             match *instruction.get_op() {
                 Operation::TapeLeft => self.tape.move_left(instruction.get_n())?,
@@ -121,6 +91,6 @@ impl<'a, W: Write> Interpreter<'a, W> {
                 Operation::EndLoop => self.program.end_loop(self.tape.current_value.0),
             };
         }
-        return Ok(());
+        Ok(())
     }
 }

@@ -1,5 +1,5 @@
-use std::fmt;
 use std::num::Wrapping;
+use std::{fmt};
 
 // TODO: create a BigIntTape and CharTape, both of which somehow share this code
 // by having this as implementation of a trait Tape
@@ -7,18 +7,20 @@ use std::num::Wrapping;
 pub struct Tape {
     pub current_position: usize,
     pub current_value: Wrapping<usize>,
-    tape: Box<Vec<Wrapping<usize>>>,
+    tape: Vec<Wrapping<usize>>,
+}
+
+impl Default for Tape {
+    fn default() -> Self {
+        Self {
+            current_position: 0,
+            current_value: Wrapping(0),
+            tape: vec![Wrapping(0)],
+        }
+    }
 }
 
 impl Tape {
-    pub fn new() -> Tape {
-        Tape {
-            current_position: 0,
-            current_value: Wrapping(0),
-            tape: Box::new(Vec::from([Wrapping(0)])),
-        }
-    }
-
     pub fn set_current_value(&mut self, value: Wrapping<usize>) {
         self.tape[self.current_position] = value;
         self.current_value = value;
@@ -68,10 +70,10 @@ impl fmt::Display for Tape {
         let mut tape = String::new();
 
         for i in down_range..up_range {
-            let value = self.tape.get(i as usize);
+            let value = self.tape.get(i);
             match value {
                 Some(v) => {
-                    if i as usize == self.current_position {
+                    if i == self.current_position {
                         tape = format!("{}[{}] ", tape, v);
                     } else {
                         tape = format!("{}{} ", tape, v);
@@ -85,7 +87,7 @@ impl fmt::Display for Tape {
         }
         // if we are on the last created cell
         // we don't want to print "..." as if there is something further
-        if self.current_position as usize != self.tape.len() - 1 && up_range < usize::MAX {
+        if self.current_position != self.tape.len() - 1 && up_range < usize::MAX {
             tape = format!("{}...", tape);
         }
         write!(f, "{}", tape)

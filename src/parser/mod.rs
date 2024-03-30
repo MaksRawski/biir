@@ -1,7 +1,7 @@
 use std::fmt::Display;
 type Address = usize;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Program {
     instructions: Vec<Instruction>,
     stack: Vec<usize>,
@@ -9,13 +9,6 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn new() -> Self {
-        Self {
-            instructions: Vec::new(),
-            pc: 0,
-            stack: Vec::new(),
-        }
-    }
     pub fn reset(&mut self) {
         self.pc = 0;
     }
@@ -63,18 +56,18 @@ impl Program {
 
 /// Handy struct for storing position in file.
 /// Both line_number and char_number should start from 0.
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Position {
     pub line_number: usize,
     pub char_number: usize,
 }
 
-impl Ord for Position {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+impl PartialOrd for Position {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         if self.line_number == other.line_number {
-            self.char_number.cmp(&other.char_number)
+            Some(self.char_number.cmp(&other.char_number))
         } else {
-            self.line_number.cmp(&other.line_number)
+            Some(self.line_number.cmp(&other.line_number))
         }
     }
 }
@@ -168,7 +161,7 @@ impl Display for BracketCountMismatch {
 pub struct Parser;
 impl Parser {
     pub fn parse(src: &str) -> Result<Program, String> {
-        let mut program = Program::new();
+        let mut program = Program::default();
         let chars = src.chars().collect::<Vec<_>>();
         let mut pos = Position {
             line_number: 0,
@@ -246,10 +239,8 @@ impl Parser {
                 };
                 if char == '[' {
                     opening_brackets.push(pos);
-                } else if char == ']' {
-                    if let None = opening_brackets.pop() {
-                        return Err(BracketCountMismatch::MoreClosing(pos));
-                    }
+                } else if char == ']' && opening_brackets.pop().is_none() {
+                    return Err(BracketCountMismatch::MoreClosing(pos));
                 }
             }
         }
@@ -260,7 +251,7 @@ impl Parser {
         }
     }
 
-    fn fill_loops_addresses(instructions: &mut Vec<Instruction>) {
+    fn fill_loops_addresses(instructions: &mut [Instruction]) {
         let mut stack: Vec<usize> = Vec::new();
         for i in 0..instructions.len() {
             match instructions[i].get_op() {

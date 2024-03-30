@@ -8,7 +8,7 @@ mod test_tape {
 
     #[test]
     fn test_moving() {
-        let mut tape = Tape::new();
+        let mut tape = Tape::default();
         // assert twice to make sure that it didn't actaully overflow
         assert_ne!(tape.move_left(1), Ok(()));
         assert_ne!(tape.move_left(1), Ok(()));
@@ -23,7 +23,7 @@ mod test_tape {
 
     #[test]
     fn test_current_value() {
-        let mut tape = Tape::new();
+        let mut tape = Tape::default();
 
         assert_eq!(tape.current_value, Wrapping(0));
         assert_ne!(tape.move_left(1), Ok(()));

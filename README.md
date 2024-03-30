@@ -13,23 +13,16 @@
 Available through `-n` or `--numerical-mode`.
 Prints byte values instead of their ascii representations.
 
-## Debug mode
-Entered via `-d` or `--debug-mode`.
-Allows the usage of `!TAPE` to print 10 nearby (already created) cells and
-also prints some debug info at the end of the execution.
-
 ## Notes
-- `!` can be put at any point in the program,
-but will only do anything when running in debug mode.
+- You can put `!TAPE` at any point in your program to print 10 nearby (already created) cells
 
 - Every `,` (comma) will take input the same way as `getchar` in C.
 It's also possible to provide it externally using pipes,
-however it will exit once the whole input was consumed.
+however it will exit once the whole input is consumed.
 
 - (note to point above) Keep in mind that by default `echo` passes `\n` as last character.
 This behaviour can be avoided by using its `-n` flag.
 
-
 # TODO:
-- [ ] add a cool logo
-- [ ] repl??
+- [ ] add a cool logo (generate something like "beer exploding head emoji" with stable-diffusion)
+- [ ] repl!

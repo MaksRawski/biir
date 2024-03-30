@@ -1,5 +1,9 @@
-use std::fmt::Display;
-type Address = usize;
+pub mod instruction;
+pub mod utils;
+use crate::parser::instruction::{Instruction, Operation};
+use utils::Position;
+
+use self::utils::{Address, BracketCountMismatch};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct Program {
@@ -51,110 +55,6 @@ impl Program {
                 None => panic!("Tried to end_loop when stack was empty!"),
             }
         }
-    }
-}
-
-/// Handy struct for storing position in file.
-/// Both line_number and char_number should start from 0.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct Position {
-    pub line_number: usize,
-    pub char_number: usize,
-}
-
-impl PartialOrd for Position {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        if self.line_number == other.line_number {
-            Some(self.char_number.cmp(&other.char_number))
-        } else {
-            Some(self.line_number.cmp(&other.line_number))
-        }
-    }
-}
-
-impl Display for Position {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "line {}, char {}",
-            self.line_number + 1,
-            self.char_number + 1
-        ))
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Operation {
-    TapeLeft,
-    TapeRight,
-    /// Prints 10 nearby tape values.
-    TapePrint,
-    CellInc,
-    CellDec,
-    CellRead,
-    CellWrite,
-    /// Contains the address of the matching EndLoop or None if it wasn't set yet.
-    BeginLoop(Option<Address>),
-    EndLoop,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Instruction {
-    /// number of times this operation should be repeated
-    /// NOTE: BeginLoop and EndLoop will always have this set to 1
-    n: usize,
-    /// type of operation that will be performed
-    op: Operation,
-    /// position of the first appearance of this operation in source code
-    /// (line number, char number in line)
-    pos: Position,
-}
-
-impl Instruction {
-    fn new(n: usize, op: Operation, pos: Position) -> Self {
-        Self { n, op, pos }
-    }
-    pub fn get_op(&self) -> &Operation {
-        &self.op
-    }
-    pub fn get_n(&self) -> usize {
-        self.n
-    }
-    pub fn set_end_of_loop_address(&mut self, addr: Address) {
-        match self.op {
-            Operation::BeginLoop(None) => {
-                self.op = Operation::BeginLoop(Some(addr));
-            }
-            Operation::BeginLoop(_) => {
-                panic!("set_end_of_loop_address was called more than once!")
-            }
-            _ => {
-                panic!(
-                    "set_end_of_loop_address called on a non-BeginLoop instruction! instruction: {:?}",
-                    self
-                )
-            }
-        }
-    }
-}
-
-pub enum BracketCountMismatch {
-    MoreOpening(Position),
-    MoreClosing(Position),
-}
-
-impl Display for BracketCountMismatch {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (bracket, pos) = if let BracketCountMismatch::MoreOpening(pos) = self {
-            ("opening", pos)
-        } else if let BracketCountMismatch::MoreClosing(pos) = self {
-            ("closing", pos)
-        } else {
-            unreachable!();
-        };
-        f.write_fmt(format_args!(
-            "Bracket count mismatch! Extra {} bracket found at {}",
-            bracket, pos
-        ))
     }
 }
 
@@ -271,6 +171,12 @@ impl Parser {
             }
         }
     }
+}
+
+#[cfg(test)]
+mod test_program_struct {
+    #[test]
+    fn test_program_begin_loop() {}
 }
 
 #[test]

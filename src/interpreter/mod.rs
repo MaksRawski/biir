@@ -5,7 +5,7 @@ use std::io::Write;
 use std::num::Wrapping;
 
 use crate::{
-    parser::{Operation, Parser, Program},
+    parser::{instruction::Operation, Parser, Program},
     tape::Tape,
 };
 

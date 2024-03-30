@@ -1,5 +1,5 @@
+use std::fmt;
 use std::num::Wrapping;
-use std::{fmt};
 
 // TODO: create a BigIntTape and CharTape, both of which somehow share this code
 // by having this as implementation of a trait Tape
@@ -91,5 +91,47 @@ impl fmt::Display for Tape {
             tape = format!("{}...", tape);
         }
         write!(f, "{}", tape)
+    }
+}
+
+#[cfg(test)]
+mod test_tape {
+    use super::*;
+
+    #[test]
+    fn test_moving() {
+        let mut tape = Tape::default();
+        // assert twice to make sure that it didn't actaully overflow
+        assert_ne!(tape.move_left(1), Ok(()));
+        assert_ne!(tape.move_left(1), Ok(()));
+
+        assert_eq!(tape.move_right(usize::MAX), Ok(()));
+        assert_ne!(tape.move_right(1), Ok(()));
+    }
+
+    #[test]
+    fn test_current_value() {
+        let mut tape = Tape::default();
+
+        assert_eq!(tape.current_value, Wrapping(0));
+        assert_ne!(tape.move_left(1), Ok(()));
+        assert_eq!(tape.current_value, Wrapping(0));
+
+        assert_eq!(tape.move_right(usize::MAX), Ok(()));
+        assert_eq!(tape.current_value, Wrapping(0));
+
+        assert_ne!(tape.move_right(1), Ok(()));
+        assert_eq!(tape.current_value, Wrapping(0));
+    }
+
+    #[test]
+    fn test_value_changing() {
+        let mut tape = Tape::default();
+        tape.inc(usize::MAX);
+        assert_eq!(tape.current_value, Wrapping(usize::MAX));
+        tape.inc(1);
+        assert_eq!(tape.current_value, Wrapping(0));
+        tape.dec(1);
+        assert_eq!(tape.current_value, Wrapping(usize::MAX));
     }
 }

@@ -1,8 +1,50 @@
+# https://github.com/mozilla/grcov#grcov-with-gitlab
+image: rust:1.77
+
 stages:
   - test
+  - pages
 
-tests:
-  image: rustdocker/rust:stable
-  stage: test
+test:coverage:
+  variables:
+    CARGO_HOME: $CI_PROJECT_DIR/.cargo
+    LLVM_PROFILE_FILE: "target/coverage/%p-%m.profraw"
+    RUSTFLAGS: "-Cinstrument-coverage"
+  cache:
+    key:
+      files:
+        - Cargo.toml
+    paths:
+      - $CARGO_HOME
+  before_script:
+    - export PATH=$CARGO_HOME/bin:$PATH
+    - rustup component add llvm-tools-preview
+    - cargo install grcov
+    - apt update && apt install -y libxml2-utils
   script:
-    - cargo test --verbose --jobs 1
+    - mkdir -p target/coverage
+    - cargo test -- --test-threads=1
+    - grcov target/coverage --binary-path target/debug -s . -o target/coverage --keep-only 'src/*' --output-types html,cobertura
+    - xmllint --xpath "concat('Coverage:', 100 * string(//coverage/@line-rate), '%')" target/coverage/cobertura.xml
+
+  coverage: '/Coverage:\d+(?:\.\d+)?/'
+  artifacts:
+    paths:
+      - target/coverage/
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: target/coverage/cobertura.xml
+
+pages:
+  needs:
+    - job: test:coverage
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  dependencies:
+    - test:coverage
+  script:
+    - mv target/coverage/html public
+  artifacts:
+    paths:
+      - public

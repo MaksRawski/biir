@@ -37,6 +37,9 @@ impl Instruction {
     pub fn get_n(&self) -> usize {
         self.n
     }
+    pub fn get_position(&self) -> &Position {
+        &self.pos
+    }
     pub fn set_end_of_loop_address(&mut self, addr: Address) {
         match self.op {
             Operation::BeginLoop(None) => {

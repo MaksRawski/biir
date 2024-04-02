@@ -60,7 +60,11 @@ impl Program {
 
 pub struct Parser;
 impl Parser {
+    /// Produces a ready-to-run program from src.
+    /// In case of an error will return a String describing it.
     pub fn parse(src: &str) -> Result<Program, String> {
+        Self::check_brackets(src).map_err(|e| e.to_string())?;
+
         let mut program = Program::default();
         let chars = src.chars().collect::<Vec<_>>();
         let mut pos = Position {
@@ -89,41 +93,60 @@ impl Parser {
                 continue;
             }
 
-            // find out how many times a character is repeating, so that we can then
-            // combine, the same operation done multiple times, into single instruction
-            let mut n = 1;
-            let mut j = i + 1;
-            while j < chars.len() && chars[j] == c {
-                n += 1;
-                j += 1;
-            }
-            i = j;
-
-            program.instructions.push(match c {
-                '-' => Instruction::new(n, Operation::CellDec, pos),
-                '+' => Instruction::new(n, Operation::CellInc, pos),
-                '<' => Instruction::new(n, Operation::TapeLeft, pos),
-                '>' => Instruction::new(n, Operation::TapeRight, pos),
-                // it doesn't really make sense to combine these operations below
-                ',' => Instruction::new(1, Operation::CellWrite, pos),
-                '.' => Instruction::new(1, Operation::CellRead, pos),
-                '[' => Instruction::new(1, Operation::BeginLoop(None), pos),
-                ']' => Instruction::new(1, Operation::EndLoop, pos),
+            let op = match c {
+                '-' => Operation::CellDec,
+                '+' => Operation::CellInc,
+                '<' => Operation::TapeLeft,
+                '>' => Operation::TapeRight,
+                ',' => Operation::CellWrite,
+                '.' => Operation::CellRead,
+                '[' => Operation::BeginLoop(None),
+                ']' => Operation::EndLoop,
                 '!' => {
                     if i + 4 < chars.len() && chars[i + 1..i + 5] == ['T', 'A', 'P', 'E'] {
                         i += 4;
-                        Instruction::new(1, Operation::TapePrint, pos)
+                        pos.char_number += 4;
+                        Operation::TapePrint
                     } else {
+                        pos.char_number += 1;
+                        i += 1;
                         continue;
                     }
                 }
                 _ => {
+                    pos.char_number += 1;
+                    i += 1;
                     continue;
                 }
-            });
+            };
 
-            pos.char_number += 1;
+            // if a character is one of the groupable ones, find out how many times
+            // it is repeating, so that we can then combine, the same operation done multiple times,
+            // into single instruction
+            let mut n = 1;
+            if op == Operation::CellDec
+                || op == Operation::CellInc
+                || op == Operation::TapeLeft
+                || op == Operation::TapeRight
+            {
+                let mut j = i + 1;
+                while j < chars.len() && chars[j] == c {
+                    n += 1;
+                    j += 1;
+                }
+                program.instructions.push(Instruction::new(n, op, pos));
+                pos.char_number += j - i;
+                i = j;
+            } else {
+                program.instructions.push(Instruction::new(n, op, pos));
+                pos.char_number += 1;
+                i += 1
+            }
         }
+
+        // NOTE: this should probably not be a job of a parser but because of
+        // how simple brainfuck is, this won't cost much and this way it won't
+        // create any more steps going from src to runnable program
         Self::fill_loops_addresses(&mut program.instructions);
 
         Ok(program)
@@ -151,6 +174,11 @@ impl Parser {
         }
     }
 
+    /// The point of this function is to fill in all BeginLoop's addresses which store
+    /// the position of their matching EndLoop, so that at runtime skipping a loop is trivial!
+    /// This is a seperate function from `parse` to take away complexity from it having to
+    /// also keep track of positions of all the loops and can just focus on producing
+    /// an AST, which is only then fed into this function.
     fn fill_loops_addresses(instructions: &mut [Instruction]) {
         let mut stack: Vec<usize> = Vec::new();
         for i in 0..instructions.len() {
@@ -179,36 +207,187 @@ mod test_program_struct {
     fn test_program_begin_loop() {}
 }
 
-#[test]
-fn test_parser() {
-    assert_eq!(
-        Parser::parse("---"),
-        Ok(Program {
-            instructions: vec![Instruction::new(
-                3,
-                Operation::CellDec,
-                Position {
-                    line_number: 0,
-                    char_number: 0
-                }
-            )],
-            pc: 0,
-            stack: Vec::new(),
-        })
-    );
-    // assert_eq!(
-    //     Parser::parse("+++\n+++"),
-    //     Ok(Program {
-    //         instructions: vec![Instruction::new(
-    //             6,
-    //             Operation::CellInc,
-    //             Position {
-    //                 line_number: 0,
-    //                 char_number: 0
-    //             }
-    //         )],
-    //         pc: 0,
-    //         stack: Vec::new(),
-    //     })
-    // );
+#[cfg(test)]
+mod parser_tests {
+    use super::*;
+    #[test]
+    fn test_operations() {
+        assert_eq!(
+            Parser::parse("-").unwrap().instructions[0].get_op(),
+            &Operation::CellDec
+        );
+        assert_eq!(
+            Parser::parse("+").unwrap().instructions[0].get_op(),
+            &Operation::CellInc
+        );
+        assert_eq!(
+            Parser::parse("<").unwrap().instructions[0].get_op(),
+            &Operation::TapeLeft
+        );
+        assert_eq!(
+            Parser::parse(">").unwrap().instructions[0].get_op(),
+            &Operation::TapeRight
+        );
+        assert_eq!(
+            Parser::parse(",").unwrap().instructions[0].get_op(),
+            &Operation::CellWrite
+        );
+        assert_eq!(
+            Parser::parse(".").unwrap().instructions[0].get_op(),
+            &Operation::CellRead
+        );
+
+        let p = Parser::parse("[]").unwrap();
+        assert!(matches!(
+            p.instructions[0].get_op(),
+            Operation::BeginLoop(_)
+        ));
+        assert_eq!(p.instructions[1].get_op(), &Operation::EndLoop);
+
+        assert_eq!(
+            Parser::parse("!TAPE").unwrap().instructions[0].get_op(),
+            &Operation::TapePrint
+        );
+    }
+    #[test]
+    fn test_comments() {
+        assert_eq!(Parser::parse("").unwrap().instructions.len(), 0);
+        assert_eq!(Parser::parse("a").unwrap().instructions.len(), 0);
+        assert_eq!(
+            Parser::parse("!\nT\nA\nP\nE").unwrap().instructions.len(),
+            0
+        );
+    }
+
+    #[test]
+    fn test_check_brackets() {
+        assert_eq!(Parser::check_brackets("[]"), Ok(()));
+        assert_eq!(Parser::check_brackets("[[]]"), Ok(()));
+        assert_eq!(Parser::check_brackets("[[][]]"), Ok(()));
+        assert_eq!(
+            Parser::check_brackets("["),
+            Err(BracketCountMismatch::MoreOpening(Position {
+                line_number: 0,
+                char_number: 0
+            }))
+        );
+        assert_eq!(
+            Parser::check_brackets("]"),
+            Err(BracketCountMismatch::MoreClosing(Position {
+                line_number: 0,
+                char_number: 0
+            }))
+        );
+        assert_eq!(
+            Parser::check_brackets("...["),
+            Err(BracketCountMismatch::MoreOpening(Position {
+                line_number: 0,
+                char_number: 3
+            }))
+        );
+        assert_eq!(
+            Parser::check_brackets("]["),
+            Err(BracketCountMismatch::MoreClosing(Position {
+                line_number: 0,
+                char_number: 0
+            }))
+        );
+    }
+
+    #[test]
+    fn test_instruction_grouping() {
+        let p = Parser::parse("<>>---++++").unwrap();
+
+        assert_eq!(p.instructions[0].get_n(), 1);
+        assert_eq!(p.instructions[0].get_op(), &Operation::TapeLeft);
+
+        assert_eq!(p.instructions[1].get_n(), 2);
+        assert_eq!(p.instructions[1].get_op(), &Operation::TapeRight);
+
+        assert_eq!(p.instructions[2].get_n(), 3);
+        assert_eq!(p.instructions[2].get_op(), &Operation::CellDec);
+
+        assert_eq!(p.instructions[3].get_n(), 4);
+        assert_eq!(p.instructions[3].get_op(), &Operation::CellInc);
+    }
+    #[test]
+    fn test_instruction_not_grouping() {
+        let p = Parser::parse("[[,,..]]").unwrap();
+
+        // check if first two brackets are seperate operations
+        assert_eq!(p.instructions[0].get_n(), 1);
+        assert!(matches!(
+            p.instructions[0].get_op(),
+            &Operation::BeginLoop(_)
+        ));
+        assert_eq!(p.instructions[1].get_n(), 1);
+        assert!(matches!(
+            p.instructions[1].get_op(),
+            &Operation::BeginLoop(_)
+        ));
+
+        assert_eq!(p.instructions[2].get_n(), 1);
+        assert_eq!(p.instructions[2].get_op(), &Operation::CellWrite);
+        assert_eq!(p.instructions[3].get_n(), 1);
+        assert_eq!(p.instructions[3].get_op(), &Operation::CellWrite);
+        assert_eq!(p.instructions[4].get_n(), 1);
+        assert_eq!(p.instructions[4].get_op(), &Operation::CellRead);
+        assert_eq!(p.instructions[5].get_n(), 1);
+        assert_eq!(p.instructions[5].get_op(), &Operation::CellRead);
+    }
+    #[test]
+    fn test_loop_parsing() {
+        let p = Parser::parse("[-]").unwrap();
+        assert_eq!(p.instructions[0].get_n(), 1);
+        assert_eq!(p.instructions[0].get_op(), &Operation::BeginLoop(Some(2)));
+
+        assert_eq!(p.instructions[2].get_n(), 1);
+        assert_eq!(p.instructions[2].get_op(), &Operation::EndLoop);
+    }
+    #[test]
+    fn test_instruction_positioning() {
+        assert_eq!(
+            Parser::parse(" .").unwrap().instructions[0].get_position(),
+            &Position {
+                line_number: 0,
+                char_number: 1
+            }
+        );
+        assert_eq!(
+            Parser::parse("\n.").unwrap().instructions[0].get_position(),
+            &Position {
+                line_number: 1,
+                char_number: 0
+            }
+        );
+        let p = Parser::parse("\n+-\n-+").unwrap();
+        assert_eq!(
+            p.instructions[0].get_position(),
+            &Position {
+                line_number: 1,
+                char_number: 0
+            }
+        );
+        assert_eq!(
+            p.instructions[1].get_position(),
+            &Position {
+                line_number: 1,
+                char_number: 1
+            }
+        );
+        assert_eq!(
+            p.instructions[2].get_position(),
+            &Position {
+                line_number: 2,
+                char_number: 0
+            }
+        );
+        assert_eq!(
+            p.instructions[3].get_position(),
+            &Position {
+                line_number: 2,
+                char_number: 1
+            }
+        );
+    }
 }

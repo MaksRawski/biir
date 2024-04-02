@@ -30,6 +30,7 @@ impl Display for Position {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum BracketCountMismatch {
     MoreOpening(Position),
     MoreClosing(Position),

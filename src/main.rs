@@ -2,8 +2,6 @@ use clap::{App, Arg};
 use std::process;
 
 use biir::interpreter::Interpreter;
-use biir::interpreter::Config;
-use biir::parser::Parser;
 
 fn main() {
     let args = App::new("BIIR")
@@ -35,24 +33,12 @@ fn main() {
         eprintln!("Big int mode is only available when using --numerical-mode");
         process::exit(1);
     }
-    let modes = Config {
-        debug: args.is_present("debug"),
-        numerical: args.is_present("numerical"),
-        big_int: args.is_present("big int"),
-    };
 
-    let src = std::fs::read_to_string(file).unwrap_or_else(|e| {
-        eprintln!("Error occured while reading {}: {}", file, e);
-        process::exit(1);
-    });
-    let mut program = Parser::parse(&src).unwrap_or_else(|e| {
-        eprintln!("Error occured while parsing {}: {}", file, e);
-        process::exit(1);
-    });
+    let i = &mut std::io::stdin();
+    let o = &mut std::io::stdout();
+    let mut interpreter = Interpreter::new(i, o);
 
-    let out = &mut std::io::stdout();
-    let mut interpreter = Interpreter::new(modes, out);
-    if let Err(e) = interpreter.execute(&mut program) {
+    if let Err(e) = interpreter.run(file) {
         eprintln!("{}", e);
         process::exit(1);
     }

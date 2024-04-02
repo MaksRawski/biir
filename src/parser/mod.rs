@@ -16,10 +16,11 @@ impl Program {
     pub fn reset(&mut self) {
         self.pc = 0;
     }
-    pub fn next_instruction(&mut self) -> Option<&Instruction> {
-        let i = self.instructions.get(self.pc);
+    pub fn fetch_instruction(&mut self) -> Option<&Instruction> {
+        self.instructions.get(self.pc)
+    }
+    pub fn inc_pc(&mut self) {
         self.pc += 1;
-        i
     }
     pub fn jump(&mut self, addr: usize) {
         if addr < self.instructions.len() {

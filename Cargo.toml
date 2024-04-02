@@ -1,6 +1,6 @@
 [package]
 name = "biir"
-version = "1.2.2"
+version = "2.0.0"
 authors = ["Maks Rawski <maksymilian.rawski@tutanota.com>"]
 edition = "2018"
 description = "Brainfuck Interpreter In Rust"
@@ -17,6 +17,7 @@ termion = "1.5.6"
 clap = "2.33.3"
 colored = "2"
 unicode-segmentation = "1.1.0"
+getchar = "0.1.2"
 
 [dev-dependencies]
 test-case = "1.1.0"

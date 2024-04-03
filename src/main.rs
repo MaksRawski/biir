@@ -1,4 +1,6 @@
+use biir::parser::Parser;
 use clap::{App, Arg};
+use rustyline::{error::ReadlineError, DefaultEditor};
 use std::process;
 
 use biir::interpreter::Interpreter;
@@ -8,38 +10,55 @@ fn main() {
         .version("2.0.0")
         .author("Maks Rawski <maksymilian.rawski@tutanota.com>")
         .about("Brainfuck Interpreter In Rust")
-        .arg(Arg::with_name("file")
-            .required(true)
-        )
-        .arg(Arg::with_name("debug")
-            .short("d")
-            .long("debug-mode")
-            .help("Allows the usage of `!TAPE` to print 10 nearby tape values,\nwill also print some debug info at the end.")
-        )
-        .arg(Arg::with_name("numerical")
-            .short("n")
-            .long("numerical-mode")
-            .help("Prints byte values instead of their ascii representations.")
-        )
-        .arg(Arg::with_name("big int")
-            .short("b")
-            .long("big-int-mode")
-            .help("Uses raw usize for storing cell value instead of u8 with wrapping.\nWorks only when numerical mode is used!")
-        )
+        .arg(Arg::with_name("file"))
         .get_matches();
 
-    let file = args.value_of("file").unwrap();
-    if args.is_present("big int") {
-        eprintln!("Big int mode is only available when using --numerical-mode");
-        process::exit(1);
-    }
+    if args.is_present("file") {
+        let file = args.value_of("file").unwrap();
 
-    let i = &mut std::io::stdin();
-    let o = &mut std::io::stdout();
-    let mut interpreter = Interpreter::new(i, o);
+        let i = &mut std::io::stdin();
+        let o = &mut std::io::stdout();
+        let mut interpreter = Interpreter::new(i, o);
 
-    if let Err(e) = interpreter.run(file) {
-        eprintln!("{}", e);
-        process::exit(1);
+        if let Err(e) = interpreter.run(file) {
+            eprintln!("{}", e);
+            process::exit(1);
+        }
+    } else {
+        let mut i = &mut std::io::stdin();
+        let mut o = &mut std::io::stdout();
+        let mut rl = DefaultEditor::new().unwrap();
+        let mut interpreter = Interpreter::new(&mut i, &mut o);
+
+        loop {
+            let readline = rl.readline(">> ");
+            match readline {
+                Ok(line) => {
+                    rl.add_history_entry(line.as_str()).unwrap();
+                    match Parser::parse(&line) {
+                        Ok(mut prog) => {
+                            if let Err(e) = interpreter.execute(&mut prog, false) {
+                                eprintln!("{}", e);
+                            } else {
+                                // force flush the output from the interpreter
+                                println!();
+                            }
+                        }
+                        Err(e) => eprintln!("{}", e),
+                    };
+                    continue;
+                }
+                Err(ReadlineError::Interrupted) => {
+                    break;
+                }
+                Err(ReadlineError::Eof) => {
+                    break;
+                }
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break;
+                }
+            }
+        }
     }
 }

@@ -6,8 +6,8 @@ use std::num::Wrapping;
 
 pub struct Tape {
     pub current_position: usize,
-    pub current_value: Wrapping<usize>,
-    tape: Vec<Wrapping<usize>>,
+    pub current_value: Wrapping<u8>,
+    tape: Vec<Wrapping<u8>>,
 }
 
 impl Default for Tape {
@@ -20,8 +20,8 @@ impl Default for Tape {
     }
 }
 
-impl From<Vec<usize>> for Tape {
-    fn from(vec: Vec<usize>) -> Self {
+impl From<Vec<u8>> for Tape {
+    fn from(vec: Vec<u8>) -> Self {
         Self {
             tape: vec.iter().map(|v| Wrapping(*v)).collect(),
             ..Default::default()
@@ -30,7 +30,7 @@ impl From<Vec<usize>> for Tape {
 }
 
 impl Tape {
-    pub fn set_current_value(&mut self, value: Wrapping<usize>) {
+    pub fn set_current_value(&mut self, value: Wrapping<u8>) {
         self.tape[self.current_position] = value;
         self.current_value = value;
     }
@@ -44,7 +44,7 @@ impl Tape {
         match self.tape.get(self.current_position) {
             Some(v) => self.current_value = *v,
             None => {
-                self.current_value = Wrapping(usize::MIN);
+                self.current_value = Wrapping(u8::MIN);
                 self.tape.push(self.current_value);
             }
         }
@@ -62,11 +62,11 @@ impl Tape {
     }
 
     pub fn inc(&mut self, n: usize) {
-        self.set_current_value(self.current_value + Wrapping(n));
+        self.set_current_value(self.current_value + Wrapping((n % 256) as u8));
     }
 
     pub fn dec(&mut self, n: usize) {
-        self.set_current_value(self.current_value - Wrapping(n));
+        self.set_current_value(self.current_value - Wrapping((n % 256) as u8));
     }
 }
 
@@ -144,12 +144,12 @@ mod test_tape {
     #[test]
     fn test_value_changing() {
         let mut tape = Tape::default();
-        tape.inc(usize::MAX);
-        assert_eq!(tape.current_value, Wrapping(usize::MAX));
+        tape.inc(u8::MAX.into());
+        assert_eq!(tape.current_value, Wrapping(u8::MAX));
         tape.inc(1);
         assert_eq!(tape.current_value, Wrapping(0));
         tape.dec(1);
-        assert_eq!(tape.current_value, Wrapping(usize::MAX));
+        assert_eq!(tape.current_value, Wrapping(u8::MAX));
     }
     #[test]
     fn test_tape_display() {
@@ -178,7 +178,7 @@ mod test_tape {
         tape.move_right(1).unwrap();
         assert_eq!(tape.to_string(), "(2) ... 3 4 5 6 7 8 9 10 11 [12]");
 
-        let mut tape: Tape = (1..=20).collect::<Vec<usize>>().into();
+        let mut tape: Tape = (1..=20).collect::<Vec<u8>>().into();
         tape.move_right(9).unwrap();
         assert_eq!(
             tape.to_string(),

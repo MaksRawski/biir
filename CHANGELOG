@@ -1,7 +1,8 @@
 # Changelog:
 
 # 2.0.0
-- HUUUUUGE refactor
+- huge refactor; parsing and interpreting are now two different things
+- added REPL
 - removed all the flags for now as they're kind of pointless,
   though numerical-mode will hopefully return at some point
 

@@ -15,6 +15,7 @@ pub struct Program {
 impl Program {
     pub fn reset(&mut self) {
         self.pc = 0;
+        self.stack.clear();
     }
     pub fn fetch_instruction(&mut self) -> Option<&Instruction> {
         self.instructions.get(self.pc)

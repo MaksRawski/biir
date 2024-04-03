@@ -24,15 +24,16 @@ impl<'a, R: Read, W: Write> Interpreter<'a, R, W> {
         }
     }
 
-    fn handle_dot(&mut self) {
-        let _ = self.output.write(
-            format!(
-                "{}",
-                char::from_u32(self.tape.current_value.0 as u32)
-                    .expect("tape's value should never be bigger than u32")
-            )
-            .as_bytes(),
-        );
+    fn handle_dot(&mut self, numerical_mode: bool) {
+        // if this operation can't write to self.output then that's a critical error
+        // hence the unwrapping
+        if numerical_mode {
+            self.output.write(&[self.tape.current_value.0]).unwrap();
+        } else {
+            self.output
+                .write(self.tape.current_value.0.to_string().as_bytes())
+                .unwrap();
+        };
     }
 
     pub fn run<P: AsRef<std::path::Path>>(&mut self, file: P) -> Result<(), String> {
@@ -53,10 +54,10 @@ impl<'a, R: Read, W: Write> Interpreter<'a, R, W> {
                 e
             )
         })?;
-        self.execute(&mut program)
+        self.execute(&mut program, false)
     }
 
-    pub fn execute(&mut self, program: &mut Program) -> Result<(), String> {
+    pub fn execute(&mut self, program: &mut Program, literal_output: bool) -> Result<(), String> {
         while let Some(instruction) = program.fetch_instruction() {
             match *instruction.get_op() {
                 Operation::TapeLeft => self.tape.move_left(instruction.get_n())?,
@@ -70,7 +71,7 @@ impl<'a, R: Read, W: Write> Interpreter<'a, R, W> {
                 }
                 Operation::CellInc => self.tape.inc(instruction.get_n()),
                 Operation::CellDec => self.tape.dec(instruction.get_n()),
-                Operation::CellRead => self.handle_dot(),
+                Operation::CellRead => self.handle_dot(literal_output),
                 Operation::CellWrite => {
                     let mut buf: [u8; 1] = [0];
                     self.input
@@ -78,8 +79,8 @@ impl<'a, R: Read, W: Write> Interpreter<'a, R, W> {
                         .map_err(|e| e.to_string())?;
                     self.tape.set_current_value(Wrapping(buf[0].into()));
                 }
-                Operation::BeginLoop(_) => program.begin_loop(self.tape.current_value.0),
-                Operation::EndLoop => program.end_loop(self.tape.current_value.0),
+                Operation::BeginLoop(_) => program.begin_loop(self.tape.current_value.0.into()),
+                Operation::EndLoop => program.end_loop(self.tape.current_value.0.into()),
             };
             program.inc_pc();
         }
@@ -100,7 +101,7 @@ mod interpreter_tests {
         let mut interpreter = Interpreter::new(&mut input, &mut output);
         let mut program = Parser::parse(",+++.").unwrap();
 
-        interpreter.execute(&mut program).unwrap();
+        interpreter.execute(&mut program, true).unwrap();
         assert_eq!(output, vec![126]);
     }
 
@@ -111,7 +112,7 @@ mod interpreter_tests {
         let mut interpreter = Interpreter::new(&mut input, &mut output);
         let mut program = Parser::parse("[-].").unwrap();
 
-        interpreter.execute(&mut program).unwrap();
+        interpreter.execute(&mut program, true).unwrap();
         assert_eq!(output, vec![0]);
     }
 
@@ -123,7 +124,7 @@ mod interpreter_tests {
         let mut interpreter = Interpreter::new(&mut input, &mut output);
         let mut program = Parser::parse(",>,>,!TAPE").unwrap();
 
-        interpreter.execute(&mut program).unwrap();
+        interpreter.execute(&mut program, false).unwrap();
         assert_eq!(String::from_utf8(output).unwrap(), "!TAPE: 1 2 [3]");
     }
 }

@@ -25,21 +25,14 @@ impl<'a, R: Read, W: Write> Interpreter<'a, R, W> {
     }
 
     fn handle_dot(&mut self) {
-        let numerical_mode = false;
-        if numerical_mode {
-            let _ = self
-                .output
-                .write(format!("{}\n", self.tape.current_value).as_bytes());
-        } else {
-            let _ = self.output.write(
-                format!(
-                    "{}",
-                    char::from_u32(self.tape.current_value.0 as u32)
-                        .expect("big-int mode was used without numerical mode!")
-                )
-                .as_bytes(),
-            );
-        }
+        let _ = self.output.write(
+            format!(
+                "{}",
+                char::from_u32(self.tape.current_value.0 as u32)
+                    .expect("tape's value should never be bigger than u32")
+            )
+            .as_bytes(),
+        );
     }
 
     pub fn run<P: AsRef<std::path::Path>>(&mut self, file: P) -> Result<(), String> {
@@ -103,22 +96,34 @@ mod interpreter_tests {
     #[test]
     fn test_basic_io() {
         let mut input = Cursor::new(vec![123]);
-        let mut out: Vec<u8> = Vec::new();
-        let mut interpreter = Interpreter::new(&mut input, &mut out);
+        let mut output: Vec<u8> = Vec::new();
+        let mut interpreter = Interpreter::new(&mut input, &mut output);
         let mut program = Parser::parse(",+++.").unwrap();
 
         interpreter.execute(&mut program).unwrap();
-        assert_eq!(out, vec![126]);
+        assert_eq!(output, vec![126]);
     }
 
     #[test]
     fn test_loops() {
-        let mut out: Vec<u8> = Vec::new();
         let mut input = Cursor::new(vec![10]);
-        let mut interpreter = Interpreter::new(&mut input, &mut out);
+        let mut output: Vec<u8> = Vec::new();
+        let mut interpreter = Interpreter::new(&mut input, &mut output);
         let mut program = Parser::parse("[-].").unwrap();
 
         interpreter.execute(&mut program).unwrap();
-        assert_eq!(out, vec![0]);
+        assert_eq!(output, vec![0]);
+    }
+
+    #[test]
+    fn test_tape_print() {
+        let mut input = Cursor::new(vec![1, 2, 3]);
+        let mut output: Vec<u8> = Vec::new();
+
+        let mut interpreter = Interpreter::new(&mut input, &mut output);
+        let mut program = Parser::parse(",>,>,!TAPE").unwrap();
+
+        interpreter.execute(&mut program).unwrap();
+        assert_eq!(String::from_utf8(output).unwrap(), "!TAPE: 1 2 [3]");
     }
 }

@@ -20,6 +20,15 @@ impl Default for Tape {
     }
 }
 
+impl From<Vec<usize>> for Tape {
+    fn from(vec: Vec<usize>) -> Self {
+        Self {
+            tape: vec.iter().map(|v| Wrapping(*v)).collect(),
+            ..Default::default()
+        }
+    }
+}
+
 impl Tape {
     pub fn set_current_value(&mut self, value: Wrapping<usize>) {
         self.tape[self.current_position] = value;
@@ -63,34 +72,42 @@ impl Tape {
 
 impl fmt::Display for Tape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // highlight current cell and print nearby cells
-        // print 10 cells while trying to be in the middle
-        let down_range = (self.current_position as isize - 5).max(0) as usize;
-        let up_range = down_range + 10;
-        let mut tape = String::new();
+        // highlight current cell and print upto 10 nearby cells
+        // while trying to be in the middle
+        let mut down_range = (self.current_position as isize - 5).max(0) as usize;
+        let up_range = (self.current_position + 4)
+            .max(down_range + 10)
+            .min(self.tape.len());
+
+        if up_range as isize - 10 > 0 {
+            down_range = up_range - 10;
+        }
+
+        let mut res = String::new();
+
+        if down_range > 0 {
+            res = format!("({}) ... ", down_range);
+        }
 
         for i in down_range..up_range {
             let value = self.tape.get(i);
             match value {
                 Some(v) => {
                     if i == self.current_position {
-                        tape = format!("{}[{}] ", tape, v);
+                        res.push_str(&format!("[{}] ", v));
                     } else {
-                        tape = format!("{}{} ", tape, v);
+                        res.push_str(&format!("{} ", v));
                     }
                 }
                 None => break,
             }
         }
-        if down_range > usize::MIN {
-            tape = format!("current postion: {}\n... {}", self.current_position, tape);
+
+        res.pop();
+        if up_range < self.tape.len() {
+            res.push_str(&format!(" ... ({})", self.tape.len() - up_range));
         }
-        // if we are on the last created cell
-        // we don't want to print "..." as if there is something further
-        if self.current_position != self.tape.len() - 1 && up_range < usize::MAX {
-            tape = format!("{}...", tape);
-        }
-        write!(f, "{}", tape)
+        write!(f, "{}", res)
     }
 }
 
@@ -133,5 +150,39 @@ mod test_tape {
         assert_eq!(tape.current_value, Wrapping(0));
         tape.dec(1);
         assert_eq!(tape.current_value, Wrapping(usize::MAX));
+    }
+    #[test]
+    fn test_tape_display() {
+        assert_eq!(Tape::from(vec![1, 2, 3]).to_string(), "[1] 2 3");
+        assert_eq!(
+            Tape::from(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).to_string(),
+            "[1] 2 3 4 5 6 7 8 9 10"
+        );
+
+        let mut tape = Tape::from(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+        tape.move_right(5).unwrap();
+        assert_eq!(tape.to_string(), "1 2 3 4 5 [6] 7 8 9 10 ... (2)");
+
+        tape.move_right(1).unwrap();
+        assert_eq!(tape.to_string(), "(1) ... 2 3 4 5 6 [7] 8 9 10 11 ... (1)");
+
+        tape.move_right(1).unwrap();
+        assert_eq!(tape.to_string(), "(2) ... 3 4 5 6 7 [8] 9 10 11 12");
+
+        tape.move_right(1).unwrap();
+        assert_eq!(tape.to_string(), "(2) ... 3 4 5 6 7 8 [9] 10 11 12");
+
+        tape.move_right(2).unwrap();
+        assert_eq!(tape.to_string(), "(2) ... 3 4 5 6 7 8 9 10 [11] 12");
+
+        tape.move_right(1).unwrap();
+        assert_eq!(tape.to_string(), "(2) ... 3 4 5 6 7 8 9 10 11 [12]");
+
+        let mut tape: Tape = (1..=20).collect::<Vec<usize>>().into();
+        tape.move_right(9).unwrap();
+        assert_eq!(
+            tape.to_string(),
+            "(4) ... 5 6 7 8 9 [10] 11 12 13 14 ... (6)"
+        );
     }
 }
